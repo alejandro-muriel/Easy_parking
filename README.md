@@ -44,24 +44,24 @@ Desarrollar Parquea Facil para optimizar el uso del parqueadero institucional, r
 
 Las versiones pueden ajustarse segun compatibilidad institucional, pero esta es la linea base recomendada:
 
-- Node.js: 22 LTS
-- Next.js: 15.x
-- React: 19.x
+- [Node.js: 24 LTS](https://nodejs.org/en/download/archive/v24.14.0)
+- [Next.js: 15.x](https://nextjs.org/docs/15/app)
+- [React: 19.x](https://react.dev/blog/2024/12/05/react-19)
 - TypeScript: 5.x
 - Tailwind CSS: 4.x
 - PostgreSQL: 16.x
 - Prisma ORM: 6.x
-- Zod: 3.x o 4.x
+- Zod: 4.x
 - Gestor de paquetes: npm
 
 ## 5. Requisitos Previos
 
 Instalar en tu equipo:
 
-1. Node.js 22 LTS
+1. Node.js 24 LTS [usa NVM](https://www.nvmnode.com/guide/download.html)
 2. npm (incluido con Node.js)
-3. PostgreSQL local o remoto
-4. Git
+3. PostgreSQL [local](https://www.postgresql.org/download/), [docker](https://hub.docker.com/_/postgres) o remoto
+4. [Git](https://git-scm.com/install/)
 
 Verificacion sugerida:
 

@@ -10,11 +10,93 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Models placeholder - serán expandidos en siguientes iteraciones
+// ============================================================================
+// F-01: Authentication & Authorization Models
+// ============================================================================
+
+/// Catálogo de roles disponibles en el sistema
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique // ESTUDIANTE, DOCENTE, ADMINISTRATIVO, DIRECTIVO, CELADOR, ADMIN
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  users              User[]
+  rolePermissions    RolePermission[]
+
+  @@map("roles")
+}
+
+/// Catálogo de permisos que se pueden asignar a roles
+model Permission {
+  id          String   @id @default(cuid())
+  resource    String   // auth, parking, admin
+  action      String   // login, view, create, manage
+  key         String   @unique // parking.reserve.create
+  description String?
+  createdAt   DateTime @default(now())
+
+  rolePermissions RolePermission[]
+
+  @@unique([resource, action])
+  @@index([resource])
+  @@map("permissions")
+}
+
+/// Matriz de asignación: qué permisos tiene cada rol
+model RolePermission {
+  id           String   @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime @default(now())
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+/// Usuarios del sistema con autenticación por email/contraseña
 model User {
-  id        Int     @id @default(autoincrement())
-  email     String  @unique
-  name      String?
+  id                String   @id @default(cuid())
+  email             String   @unique // usuario@poli.edu.co
+  name              String
+  passwordHash      String   // Bcrypt hash - NUNCA plaintext
+  roleId            String
+  parqueoPermanente Boolean  @default(false)
+  estadoCuenta      String   @default("ACTIVE") // ACTIVE, SUSPENDED, INACTIVE
+  ultimoLogin       DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  role     Role      @relation(fields: [roleId], references: [id], onDelete: Restrict)
+  sessions Session[]
+
+  @@index([email])
+  @@index([roleId])
+  @@index([estadoCuenta])
+  @@map("users")
+}
+
+/// Sesiones activas de usuarios autenticados
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  token     String   @unique // JWT o token opaco
+  expiresAt DateTime
+  revokedAt DateTime?
+  ipAddress String?
+  userAgent String?
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([token])
+  @@map("sessions")
 }

@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { LoginForm } from '@/components/auth/login-form';
@@ -28,13 +27,10 @@ export default async function LoginPage({
       <div className="login-container">
         {/* Logo e identidad institucional */}
         <div className="login-header">
-          <Image
+          <img
             src="/logo.png"
             alt="Politécnico Colombiano Jaime Isaza Cadavid"
-            width={120}
-            height={120}
             className="login-logo"
-            priority
           />
           <p className="login-institution">POLITÉCNICO COLOMBIANO<br /><span>JAIME ISAZA CADAVID</span></p>
           <h1 className="login-title">Parquea Fácil</h1>

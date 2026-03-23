@@ -27,11 +27,16 @@ export default async function LoginPage({
       <div className="login-container">
         {/* Logo e identidad institucional */}
         <div className="login-header">
-          <img
-            src="/logo.png"
-            alt="Politécnico Colombiano Jaime Isaza Cadavid"
-            className="login-logo"
-          />
+          <picture>
+            <source srcSet="/logo.svg" type="image/svg+xml" />
+            <img
+              src="/logo.png"
+              alt="Politécnico Colombiano Jaime Isaza Cadavid"
+              className="login-logo"
+              width={110}
+              height={110}
+            />
+          </picture>
           <p className="login-institution">POLITÉCNICO COLOMBIANO<br /><span>JAIME ISAZA CADAVID</span></p>
           <h1 className="login-title">Parquea Fácil</h1>
           <p className="login-subtitle">Sistema de Gestión de Parqueaderos</p>

@@ -32,6 +32,6 @@ export const config = {
     /*
      * Aplica a todas las rutas excepto activos estáticos.
      */
-    '/((?!_next/static|_next/image|favicon.ico).*)',
+    '/((?!_next/static|_next/image|favicon.ico|.*\\..*).*)',
   ],
 };

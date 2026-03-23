@@ -6,13 +6,15 @@ La solucion permite administrar reservas y ocupacion en tiempo real con perfiles
 
 ## 1. Estado Del Proyecto
 
-- Estado actual: Base documental y de planeacion
+- Estado actual: ✅ Base tecnica inicializada y operacional (v0.0.1)
 - Tipo de entrega: Prototipo funcional en 4 meses (MVP por fases)
 - Plataforma objetivo: Web responsive
+- Servidor de desarrollo: ✅ Corriendo en http://localhost:3000
 - Integraciones en esta fase:
-- Horario institucional: Simulado (mock/CSV)
-- Cobro fuera de horario: Simulado (sin pasarela de pago real)
-- Notificaciones: In-app
+  - Horario institucional: Simulado (mock/CSV)
+  - Cobro fuera de horario: Simulado (sin pasarela de pago real)
+  - Notificaciones: In-app
+- Próxima fase: Diseño del modelo de datos y schema Prisma
 
 ## 2. Objetivo General
 
@@ -44,9 +46,9 @@ Desarrollar Parquea Facil para optimizar el uso del parqueadero institucional, r
 
 Las versiones pueden ajustarse segun compatibilidad institucional, pero esta es la linea base recomendada:
 
-- [Node.js: 24 LTS](https://nodejs.org/en/download/archive/v24.14.0)
-- [Next.js: 15.x](https://nextjs.org/docs/15/app)
-- [React: 19.x](https://react.dev/blog/2024/12/05/react-19)
+- Node.js: 22 LTS
+- Next.js: 15.x
+- React: 19.x
 - TypeScript: 5.x
 - Tailwind CSS: 4.x
 - PostgreSQL: 16.x
@@ -58,7 +60,7 @@ Las versiones pueden ajustarse segun compatibilidad institucional, pero esta es 
 
 Instalar en tu equipo:
 
-1. Node.js 24 LTS [usa NVM](https://www.nvmnode.com/guide/download.html)
+1. Node.js 22 LTS [usa NVM](https://www.nvmnode.com/guide/download.html)
 2. npm (incluido con Node.js)
 3. PostgreSQL [local](https://www.postgresql.org/download/), [docker](https://hub.docker.com/_/postgres) o remoto
 4. [Git](https://git-scm.com/install/)
@@ -204,7 +206,7 @@ Esta seccion se actualiza en cada iteracion.
 
 | ID | Feature | Estado | Version objetivo | Notas |
 |---|---|---|---|---|
-| F-01 | Login y control por roles | Planificado | v0.1.0 | Base para perfiles del sistema |
+| F-01 | Login y control por roles | En desarrollo | v0.1.0 | Base para perfiles del sistema |
 | F-02 | Reserva y cancelacion de plaza | Planificado | v0.2.0 | Incluye validacion de conflictos |
 | F-03 | Asignacion/liberacion por celador | Planificado | v0.2.0 | Operacion en tiempo real |
 | F-04 | Mapa visual tipo cine | Planificado | v0.3.0 | Estados visuales de plazas |
@@ -229,7 +231,7 @@ Historial:
 
 | Version | Estado | Fecha | Cambios |
 |---|---|---|---|
-| v0.0.1 | Activa | 2026-03-20 | Documento base del proyecto, alcance y roadmap inicial |
+| v0.0.1 | Completada | 2026-03-23 | Infraestructura base: Next.js 15 + TypeScript + Tailwind CSS 4 + Prisma 6, Node.js 22, estructura de carpetas, configuracion inicial, servidor de desarrollo operativo |
 
 ## 15. Roadmap De 4 Meses (Resumen)
 

@@ -3,21 +3,28 @@
 import { FormEvent, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
-type LoginState = {
-  email: string;
-  password: string;
-};
-
-const initialState: LoginState = {
-  email: '',
-  password: '',
-};
+const PROFILES = [
+  { label: 'Estudiante',     email: 'estudiante@poli.edu.co' },
+  { label: 'Docente',        email: 'docente@poli.edu.co' },
+  { label: 'Administrativo', email: 'admin@poli.edu.co' },
+  { label: 'Directivo',      email: 'admin@poli.edu.co' },
+  { label: 'Celador',        email: 'celador@poli.edu.co' },
+  { label: 'Administrador',  email: 'admin@poli.edu.co' },
+];
 
 export function LoginForm({ redirectTo = '/dashboard' }: { redirectTo?: string }) {
   const router = useRouter();
-  const [form, setForm] = useState<LoginState>(initialState);
+  const [profile, setProfile]   = useState(PROFILES[0].label);
+  const [email, setEmail]       = useState('');
+  const [password, setPassword] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  function handleProfileChange(value: string) {
+    setProfile(value);
+    const found = PROFILES.find((p) => p.label === value);
+    if (found) setEmail(found.email);
+  }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -27,10 +34,8 @@ export function LoginForm({ redirectTo = '/dashboard' }: { redirectTo?: string }
     try {
       const response = await fetch('/api/auth/login', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(form),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password }),
       });
 
       const payload = (await response.json()) as { message?: string };
@@ -50,25 +55,47 @@ export function LoginForm({ redirectTo = '/dashboard' }: { redirectTo?: string }
   }
 
   return (
-    <form className="space-y-5" onSubmit={handleSubmit}>
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-slate-700" htmlFor="email">
-          Correo institucional
+    <form className="login-form" onSubmit={handleSubmit}>
+      {/* Perfil de usuario */}
+      <div className="form-group">
+        <label className="form-label" htmlFor="profile">
+          Perfil de Usuario
+        </label>
+        <div className="select-wrapper">
+          <select
+            id="profile"
+            value={profile}
+            onChange={(e) => handleProfileChange(e.target.value)}
+            className="form-select"
+          >
+            {PROFILES.map((p) => (
+              <option key={p.label} value={p.label}>{p.label}</option>
+            ))}
+          </select>
+          <span className="select-chevron" aria-hidden="true">&#8964;</span>
+        </div>
+      </div>
+
+      {/* Correo institucional */}
+      <div className="form-group">
+        <label className="form-label" htmlFor="email">
+          Correo Institucional
         </label>
         <input
           required
           id="email"
           type="email"
           autoComplete="email"
-          value={form.email}
-          onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          className="form-input"
           placeholder="usuario@poli.edu.co"
         />
       </div>
 
-      <div className="space-y-2">
-        <label className="block text-sm font-medium text-slate-700" htmlFor="password">
+      {/* Contraseña */}
+      <div className="form-group">
+        <label className="form-label" htmlFor="password">
           Contraseña
         </label>
         <input
@@ -76,26 +103,24 @@ export function LoginForm({ redirectTo = '/dashboard' }: { redirectTo?: string }
           id="password"
           type="password"
           autoComplete="current-password"
-          value={form.password}
-          onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
-          className="w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-slate-900 outline-none transition focus:border-emerald-500"
-          placeholder="Ingresa tu contraseña"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          className="form-input"
+          placeholder="••••••••"
         />
       </div>
 
       {errorMessage ? (
-        <p className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-          {errorMessage}
-        </p>
+        <p className="form-error">{errorMessage}</p>
       ) : null}
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        className="w-full rounded-2xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-400"
-      >
-        {isSubmitting ? 'Validando...' : 'Iniciar sesión'}
+      <button type="submit" disabled={isSubmitting} className="btn-primary">
+        {isSubmitting ? 'Validando...' : 'Ingresar al Sistema'}
       </button>
+
+      <p className="login-demo-note">
+        Demo: Puedes ingresar con cualquier perfil para ver los mockups
+      </p>
     </form>
   );
 }

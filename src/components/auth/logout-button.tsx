@@ -12,6 +12,8 @@ export function LogoutButton() {
 
     try {
       await fetch('/api/auth/logout', { method: 'POST' });
+    } catch {
+      // Si logout remoto falla, forzamos cierre local de sesión en UI.
     } finally {
       router.push('/login');
       router.refresh();

@@ -22,14 +22,14 @@ export function LoginForm({ redirectTo = '/dashboard' }: { redirectTo?: string }
         body: JSON.stringify({ email, password }),
       });
 
-      const payload = (await response.json()) as { message?: string };
+      const payload = (await response.json()) as { message?: string; redirectTo?: string };
 
       if (!response.ok) {
         setErrorMessage(payload.message ?? 'No fue posible iniciar sesión.');
         return;
       }
 
-      router.push(redirectTo);
+      router.push(payload.redirectTo ?? redirectTo);
       router.refresh();
     } catch {
       setErrorMessage('Ocurrió un error inesperado al iniciar sesión.');

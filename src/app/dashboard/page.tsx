@@ -6,12 +6,13 @@ import ReservaForm from '@/components/reserva/reserva-form';
 import { requireAuth } from '@/server/auth/guards';
 
 interface DashboardPageProps {
-  searchParams: { [key: string]: string | string[] | undefined };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }
 
 export default async function DashboardPage({ searchParams }: DashboardPageProps) {
   const user = await requireAuth();
-  const success = searchParams.success as string;
+  const params = await searchParams;
+  const success = params.success as string;
 
   return (
     <main className="min-h-screen bg-slate-100 px-6 py-10 text-slate-950">

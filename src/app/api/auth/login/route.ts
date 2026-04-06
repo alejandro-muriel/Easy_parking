@@ -20,13 +20,25 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: result.message }, { status: result.status });
     }
 
-    const response = NextResponse.json(
-      {
-        user: result.user,
-        redirectTo: '/dashboard',
-      },
-      { status: 200 },
-    );
+    // Redirigir según el rol del usuario
+const redirectPorRol: Record<string, string> = {
+  CELADOR: '/celador',
+  ADMIN: '/dashboard',
+  ESTUDIANTE: '/dashboard',
+  DOCENTE: '/dashboard',
+  ADMINISTRATIVO: '/dashboard',
+  DIRECTIVO: '/dashboard',
+};
+
+const redirectTo = redirectPorRol[result.user.role.name] ?? '/dashboard';
+
+const response = NextResponse.json(
+  {
+    user: result.user,
+    redirectTo,
+  },
+  { status: 200 },
+);
 
     writeSessionCookie(response.cookies, result.sessionToken, result.expiresAt);
 

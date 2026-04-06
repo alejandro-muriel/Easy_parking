@@ -212,6 +212,41 @@ async function main() {
     );
     console.log(`    ✓ ${createdUsers.filter(Boolean).length} test users created/updated`);
 
+    // 5. Crear plazas de parqueo de prueba
+console.log('  Creating parking spots...');
+const PLAZAS = [
+  // Zona A - 6 plazas normales
+  { zona: 'A', fila: 'A', numero: 1, estado: 'DISPONIBLE' as const, tipo: 'NORMAL' as const },
+  { zona: 'A', fila: 'A', numero: 2, estado: 'DISPONIBLE' as const, tipo: 'NORMAL' as const },
+  { zona: 'A', fila: 'A', numero: 3, estado: 'DISPONIBLE' as const, tipo: 'NORMAL' as const },
+  { zona: 'A', fila: 'B', numero: 1, estado: 'DISPONIBLE' as const, tipo: 'PREFERENCIAL' as const },
+  { zona: 'A', fila: 'B', numero: 2, estado: 'DISPONIBLE' as const, tipo: 'NORMAL' as const },
+  { zona: 'A', fila: 'B', numero: 3, estado: 'DISPONIBLE' as const, tipo: 'NORMAL' as const },
+  // Zona B - 6 plazas
+  { zona: 'B', fila: 'A', numero: 1, estado: 'DISPONIBLE' as const, tipo: 'PERMANENTE' as const },
+  { zona: 'B', fila: 'A', numero: 2, estado: 'DISPONIBLE' as const, tipo: 'NORMAL' as const },
+  { zona: 'B', fila: 'A', numero: 3, estado: 'DISPONIBLE' as const, tipo: 'NORMAL' as const },
+  { zona: 'B', fila: 'B', numero: 1, estado: 'DISPONIBLE' as const, tipo: 'NORMAL' as const },
+  { zona: 'B', fila: 'B', numero: 2, estado: 'DISPONIBLE' as const, tipo: 'NORMAL' as const },
+  { zona: 'B', fila: 'B', numero: 3, estado: 'DISPONIBLE' as const, tipo: 'PREFERENCIAL' as const },
+];
+
+for (const plaza of PLAZAS) {
+  await prisma.plazaParqueo.upsert({
+    where: { zona_fila_numero: { zona: plaza.zona, fila: plaza.fila, numero: plaza.numero } },
+    update: {},
+    create: {
+      zona: plaza.zona,
+      fila: plaza.fila,
+      numero: plaza.numero,
+      estado: plaza.estado,
+      tipo: plaza.tipo,
+      ultimoCambio: new Date(),
+    },
+  });
+}
+console.log(`    ✓ ${PLAZAS.length} plazas created/updated`);
+
     console.log('✅ Seeding completed successfully!');
     console.log('\n📋 Test credentials:');
     TEST_USERS.forEach((user) => {

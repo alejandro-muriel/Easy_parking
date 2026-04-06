@@ -1,5 +1,7 @@
 {
   "compilerOptions": {
+    // Ignorar deprecación de baseUrl en TypeScript 6.0+
+    "ignoreDeprecations": "6.0",
     "target": "ES2020",
     "useDefineForClassFields": true,
     "lib": [
@@ -28,6 +30,7 @@
       ]
     },
     "noEmit": true,
+    "types": ["@prisma/client"],
     "incremental": true,
     "plugins": [
       {
@@ -42,6 +45,7 @@
     ".next/types/**/*.ts"
   ],
   "exclude": [
-    "node_modules"
+    "node_modules",
+    "prisma/seed.ts"
   ]
 }

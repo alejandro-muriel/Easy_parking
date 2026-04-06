@@ -1,5 +1,5 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+// Data Models: Sistema de gestión de plazas de parqueo con autenticación y reservas
+// Cambios: Se reorganizó el schema, se agregaron modelos PlazaParqueo, Reserva y Horario
 
 generator client {
   provider = "prisma-client-js"
@@ -10,11 +10,166 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Models placeholder - serán expandidos en siguientes iteraciones
+/// Catálogo de roles disponibles en el sistema
+model Role {
+  id              String           @id @default(cuid())
+  name            String           @unique
+  description     String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  rolePermissions RolePermission[]
+  users           User[]
+
+  @@map("roles")
+}
+
+/// Catálogo de permisos que se pueden asignar a roles
+model Permission {
+  id              String           @id @default(cuid())
+  resource        String
+  action          String
+  key             String           @unique
+  description     String?
+  createdAt       DateTime         @default(now())
+  rolePermissions RolePermission[]
+
+  @@unique([resource, action])
+  @@index([resource])
+  @@map("permissions")
+}
+
+/// Matriz de asignación: qué permisos tiene cada rol
+model RolePermission {
+  id           String     @id @default(cuid())
+  roleId       String
+  permissionId String
+  createdAt    DateTime   @default(now())
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+  @@map("role_permissions")
+}
+
+/// Usuarios del sistema con autenticación por email/contraseña
 model User {
-  id        Int     @id @default(autoincrement())
-  email     String  @unique
-  name      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                String    @id @default(cuid())
+  email             String    @unique
+  name              String
+  passwordHash      String
+  roleId            String
+  parqueoPermanente Boolean   @default(false)
+  estadoCuenta      String    @default("ACTIVE")
+  ultimoLogin       DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  horarios          Horario[]
+  reservas          Reserva[]
+  sessions          Session[]
+  role              Role      @relation(fields: [roleId], references: [id])
+
+  @@index([email])
+  @@index([roleId])
+  @@index([estadoCuenta])
+  @@map("users")
+}
+
+/// Sesiones activas de usuarios autenticados
+model Session {
+  id        String    @id @default(cuid())
+  userId    String
+  token     String    @unique
+  expiresAt DateTime
+  revokedAt DateTime?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@index([token])
+  @@map("sessions")
+}
+
+/// Plaza de parqueo física con estado en tiempo real
+model PlazaParqueo {
+  id                   String      @id @default(cuid())
+  zona                 String
+  fila                 String
+  numero               Int
+  estado               EstadoPlaza @default(DISPONIBLE)
+  tipo                 TipoPlaza   @default(NORMAL)
+  ultimoCambio         DateTime    @default(now())
+  bloqueoTemporalHasta DateTime?
+  capacidadVecina      String?
+  reservas             Reserva[]
+
+  @@unique([zona, fila, numero])
+  @@index([estado])
+  @@index([tipo])
+  @@map("plazas_parqueo")
+}
+
+/// Reserva de plaza de parqueo
+model Reserva {
+  id              String        @id @default(cuid())
+  idUsuario       String
+  idPlaza         String
+  fechaHoraInicio DateTime
+  fechaHoraFin    DateTime
+  estado          EstadoReserva @default(ACTIVA)
+  fechaCreacion   DateTime      @default(now())
+  metodoPago      String?
+  plaza           PlazaParqueo  @relation(fields: [idPlaza], references: [id], onDelete: Cascade)
+  usuario         User          @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
+
+  @@index([idUsuario])
+  @@index([idPlaza])
+  @@index([estado])
+  @@index([fechaHoraInicio])
+  @@index([fechaHoraFin])
+  @@map("reservas")
+}
+
+/// Horario académico del usuario
+model Horario {
+  id         String   @id @default(cuid())
+  materia    String
+  horaInicio DateTime
+  horaFin    DateTime
+  diaSemana  String
+  idUsuario  String
+  usuario    User     @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
+
+  @@index([idUsuario])
+  @@index([diaSemana])
+  @@index([horaInicio])
+  @@index([horaFin])
+  @@map("horarios")
+}
+
+/// Estados posibles de una plaza de parqueo
+enum EstadoPlaza {
+  DISPONIBLE
+  RESERVADA
+  OCUPADA
+  BLOQUEADA
+}
+
+/// Tipos de plaza de parqueo
+enum TipoPlaza {
+  NORMAL
+  PREFERENCIAL
+  PERMANENTE
+}
+
+/// Estados posibles de una reserva
+enum EstadoReserva {
+  ACTIVA
+  CANCELADA
+  EXPIRADA
+  EXTENDIDA
 }

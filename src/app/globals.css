@@ -2,19 +2,275 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================
+   Design tokens – Parquea Fácil
+   ============================================================ */
 :root {
-  --background: #ffffff;
-  --foreground: #000000;
+  /* Palette */
+  --ep-bg:            #eef5ee;          /* light sage background */
+  --ep-surface:       #ffffff;
+  --ep-surface-soft:  #f7fbf7;
+  --ep-text:          #1a2e1a;          /* dark forest text */
+  --ep-text-soft:     #5a7a5a;
+  --ep-text-muted:    #7d9a7d;
+
+  /* Brand greens */
+  --ep-brand:         #1d6b35;          /* main forest green */
+  --ep-brand-hover:   #165429;
+  --ep-brand-light:   #2d8a4e;
+
+  /* Card accent border */
+  --ep-gold:          #c8a84b;          /* golden yellow card border */
+  --ep-gold-light:    #e8c96a;
+
+  /* UI colours */
+  --ep-line:          #d0ddd0;
+  --ep-input-bg:      #f4f8f4;
+  --ep-ring:          rgba(29, 107, 53, 0.35);
+
+  /* Shadow */
+  --ep-shadow-card:   0 4px 32px 0 rgba(29, 107, 53, 0.10), 0 1px 4px 0 rgba(0,0,0,0.06);
+
+  /* Typography */
+  --ep-radius-input:  0.625rem;         /* 10px */
+  --ep-radius-card:   1.25rem;          /* 20px */
+  --ep-radius-btn:    0.625rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
+/* ============================================================
+   Reset
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
 
 body {
-  color: var(--foreground);
-  background: var(--background);
+  min-height: 100vh;
+  color: var(--ep-text);
+  background: var(--ep-bg);
+  font-family: var(--font-body, 'Segoe UI'), sans-serif;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-heading, 'Segoe UI'), sans-serif;
+  letter-spacing: -0.01em;
+}
+
+::selection { background: rgba(29, 107, 53, 0.18); }
+
+/* ============================================================
+   Login page layout
+   ============================================================ */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem;
+  background: var(--ep-bg);
+}
+
+.login-container {
+  width: 100%;
+  max-width: 26rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* Header – logo + institution name + title */
+.login-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  text-align: center;
+}
+
+.login-logo {
+  width: 110px;
+  height: auto;
+  object-fit: contain;
+}
+
+.login-institution {
+  margin: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--ep-text);
+  text-transform: uppercase;
+  line-height: 1.4;
+}
+
+.login-institution span {
+  display: block;
+  font-weight: 400;
+}
+
+.login-title {
+  margin: 0.25rem 0 0;
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--ep-brand);
+  letter-spacing: -0.01em;
+}
+
+.login-subtitle {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--ep-brand-light);
+  font-style: italic;
+}
+
+/* Card */
+.login-card {
+  width: 100%;
+  background: var(--ep-surface);
+  border: 2px solid var(--ep-gold);
+  border-radius: var(--ep-radius-card);
+  padding: 2rem 1.75rem 1.75rem;
+  box-shadow: var(--ep-shadow-card);
+}
+
+.login-card-title {
+  margin: 0 0 0.25rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--ep-text);
+  text-align: center;
+}
+
+.login-card-subtitle {
+  margin: 0 0 1.5rem;
+  font-size: 0.8125rem;
+  color: #8a9a8a;
+  text-align: center;
+}
+
+/* ============================================================
+   Form elements
+   ============================================================ */
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.form-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--ep-text);
+}
+
+.form-input {
+  width: 100%;
+  background: var(--ep-input-bg);
+  border: 1.5px solid var(--ep-line);
+  border-radius: var(--ep-radius-input);
+  padding: 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  color: var(--ep-text);
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.form-input::placeholder {
+  color: #aac0aa;
+}
+
+.form-input:focus {
+  border-color: var(--ep-brand);
+  box-shadow: 0 0 0 3px var(--ep-ring);
+}
+
+/* Select */
+.select-wrapper {
+  position: relative;
+}
+
+.form-select {
+  width: 100%;
+  appearance: none;
+  background: var(--ep-input-bg);
+  border: 1.5px solid var(--ep-line);
+  border-radius: var(--ep-radius-input);
+  padding: 0.625rem 2.5rem 0.625rem 0.875rem;
+  font-size: 0.875rem;
+  color: var(--ep-text);
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.form-select:focus {
+  border-color: var(--ep-brand);
+  box-shadow: 0 0 0 3px var(--ep-ring);
+}
+
+.select-chevron {
+  position: absolute;
+  right: 0.875rem;
+  top: 50%;
+  transform: translateY(-55%);
+  font-size: 1.1rem;
+  color: #8a9a8a;
+  pointer-events: none;
+  line-height: 1;
+}
+
+/* Primary button */
+.btn-primary {
+  width: 100%;
+  background: var(--ep-brand);
+  color: #fff;
+  border: none;
+  border-radius: var(--ep-radius-btn);
+  padding: 0.75rem 1rem;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, transform 0.1s;
+  margin-top: 0.25rem;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: var(--ep-brand-hover);
+}
+
+.btn-primary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn-primary:disabled {
+  background: #9ab09a;
+  cursor: not-allowed;
+}
+
+/* Form error */
+.form-error {
+  margin: 0;
+  padding: 0.6rem 0.875rem;
+  background: #fff1f2;
+  border: 1px solid #fecdd3;
+  border-radius: var(--ep-radius-input);
+  font-size: 0.8125rem;
+  color: #be123c;
+}
+
+/* Demo note */
+.login-demo-note {
+  margin: 0.25rem 0 0;
+  font-size: 0.76rem;
+  color: var(--ep-text-muted);
+  text-align: center;
+  line-height: 1.5;
 }

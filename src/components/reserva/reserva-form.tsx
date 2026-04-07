@@ -36,7 +36,6 @@ export default function ReservaForm({ user }: ReservaFormProps) {
   const [plazas, setPlazas] = useState<Plaza[]>([]);
   const [selectedHorario, setSelectedHorario] = useState('');
   const [selectedPlaza, setSelectedPlaza] = useState('');
-  const [isFormValid, setIsFormValid] = useState(false);
 
   // Cargar datos iniciales
   const loadInitialData = async () => {
@@ -80,13 +79,11 @@ export default function ReservaForm({ user }: ReservaFormProps) {
     const value = e.target.value;
     setSelectedHorario(value);
     setError('');
-    setIsFormValid(!!value && !!selectedPlaza);
   };
 
   const handlePlazaChange = (_: React.MouseEvent<HTMLButtonElement>, plazaId: string) => {
     setSelectedPlaza((current) => (current === plazaId ? '' : plazaId));
     setError('');
-    setIsFormValid(!!selectedHorario && (selectedPlaza !== plazaId || !!selectedHorario));
   };
 
   const selectedHorarioObject = horarios.find((horario) => horario.id === selectedHorario);
@@ -194,7 +191,7 @@ export default function ReservaForm({ user }: ReservaFormProps) {
                   <button
                     key={horario.id}
                     type="button"
-                    onClick={(e) => handleHorarioChange({ target: { value: horario.id } } as React.ChangeEvent<HTMLSelectElement>)}
+                    onClick={() => handleHorarioChange({ target: { value: horario.id } } as React.ChangeEvent<HTMLSelectElement>)}
                     style={{
                       borderRadius: 'var(--ep-radius-card)',
                       border: `2px solid ${isSelected ? 'var(--ep-brand)' : 'var(--ep-line)'}`,

@@ -2,7 +2,7 @@
 
 Aplicacion web para la gestion de parqueaderos del Politecnico Colombiano Jaime Isaza Cadavid.
 
-## Estado actual
+## Estado actual 
 
 - Version: `0.0.1`
 - Stack base operativo: Next.js 15 + TypeScript + Prisma + PostgreSQL + Tailwind 4

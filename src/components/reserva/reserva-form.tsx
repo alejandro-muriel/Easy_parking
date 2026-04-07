@@ -6,6 +6,7 @@ import { Horario } from '@/lib/horario';
 import { PlazaParqueo } from '@/lib/plaza-parqueo';
 import { requireAuth } from '@/server/auth/guards';
 import { redirect } from 'next/navigation';
+import styles from '@/app/dashboard/dashboard.module.css'
 
 export default async function ReservaForm() {
   const user = await requireAuth();
@@ -73,8 +74,8 @@ export default async function ReservaForm() {
   }
 
   return (
-    <article className="rounded-[2rem] bg-white p-8 shadow-sm">
-      <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Reservar Plaza</p>
+    <article className={`rounded-[2rem] bg-white p-8 shadow-sm ${styles.dashCard} ${styles.dashCardGold}`}>
+      <p className={`text-sm font-semibold uppercase tracking-[0.3em] text-slate-500 ${styles.dashCardTitle}`}>Reservar Plaza</p>
       <h2 className="mt-3 text-2xl font-bold">Reserva según horario académico</h2>
       <p className="mt-3 text-sm leading-6 text-slate-600">
         Selecciona un horario de clase y una plaza disponible para reservar.

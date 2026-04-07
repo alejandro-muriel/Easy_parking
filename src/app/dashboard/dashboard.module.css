@@ -1,0 +1,166 @@
+.dashboardPage {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--ep-bg);
+}
+
+/* Header Navbar */
+.dashHeader {
+  background: #113f1f;
+  color: #fff;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  margin-bottom: 20px;
+}
+
+.dashHeaderBrand {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-weight: 700;
+  font-size: 1.25rem;
+}
+
+.dashLogoWrap {
+  width: 2rem;
+  height: 2rem;
+  background: #fff;
+  border-radius: 50%;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dashHeaderActions button {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--ep-radius-btn);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.dashHeaderActions button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Main Content */
+.dashMain {
+  flex-grow: 1;
+  padding: 2.5rem 1.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+.dashContainer {
+  width: 100%;
+  max-width: 64rem;
+}
+
+/* Welcome Section */
+.dashWelcome {
+  margin-bottom: 2.5rem;
+  border-bottom: 1px solid var(--ep-line);
+  padding-bottom: 1.5rem;
+}
+
+.dashWelcome h1 {
+  font-size: 2.5rem;
+  color: var(--ep-brand);
+  margin: 0 0 0.5rem 0;
+}
+
+.dashWelcome p {
+  color: var(--ep-text-soft);
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* Grid Layout */
+.dashGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+}
+
+@media (min-width: 768px) {
+  .dashGrid {
+    grid-template-columns: 3fr 2fr; /* 60% cuenta / 40% formulario */
+  }
+}
+
+/* Dashboard Cards */
+.dashCard {
+  background: var(--ep-surface);
+  border-radius: var(--ep-radius-card);
+  padding: 2rem;
+  box-shadow: var(--ep-shadow-card);
+}
+
+.dashCardGold {
+  border-top: 4px solid var(--ep-gold); /* Toque dorado para el form de reserva */
+}
+
+.dashCardTitle {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--ep-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin: 0 0 1.5rem 0;
+}
+
+/* Info Items (Account Details) */
+.infoGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1.5rem;
+}
+
+@media (min-width: 640px) {
+  .infoGrid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.infoItem {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.infoIcon {
+  width: 2.5rem;
+  height: 2.5rem;
+  background: var(--ep-surface-soft);
+  color: var(--ep-brand);
+  border-radius: 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.infoLabel {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--ep-text-muted);
+  text-transform: uppercase;
+  margin: 0 0 0.2rem 0;
+}
+
+.infoValue {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--ep-text);
+  margin: 0;
+}

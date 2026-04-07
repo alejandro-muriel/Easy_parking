@@ -15,57 +15,63 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const success = params.success as string;
 
   return (
-    <main className="min-h-screen bg-slate-100 px-6 py-10 text-slate-950">
-      <div className="mx-auto max-w-6xl">
-        <header className="flex flex-col gap-4 rounded-[2rem] bg-white p-8 shadow-sm sm:flex-row sm:items-start sm:justify-between">
+    <main style={{ minHeight: '100vh', backgroundColor: 'var(--ep-bg)', padding: '2rem' }}>
+      <div style={{ maxWidth: '1100px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+        <header className="login-card" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '1.5rem 1.75rem' }}>
           <div>
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-emerald-600">Panel inicial</p>
-            <h1 className="mt-3 text-4xl font-black">Hola, {user.name}</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-600">
-              Sesión activa como <strong>{user.role.name}</strong>. Este panel confirma que el flujo de autenticación ya consulta rol y permisos desde PostgreSQL.
+            <p style={{ fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--ep-brand)', margin: 0 }}>
+              Panel inicial
+            </p>
+            <h1 style={{ margin: '0.25rem 0 0', fontSize: '1.75rem', fontWeight: 800, color: 'var(--ep-text)' }}>
+              Hola, {user.name}
+            </h1>
+            <p style={{ margin: '0.5rem 0 0', fontSize: '0.95rem', color: 'var(--ep-text-soft)', maxWidth: '680px', lineHeight: 1.6 }}>
+              Sesión activa como <strong style={{ color: 'var(--ep-text)' }}>{user.role.name}</strong>. Este panel confirma que el flujo de autenticación ya consulta rol y permisos desde PostgreSQL.
             </p>
           </div>
-          <LogoutButton />
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+            <LogoutButton />
+          </div>
         </header>
 
         {success && (
-          <div className="mt-4 rounded-[2rem] bg-emerald-50 p-4 text-emerald-800">
+          <div className="login-card" style={{ backgroundColor: '#f0fdf4', borderColor: '#bbf7d0', color: '#166534' }}>
             {success}
           </div>
         )}
 
-        <section className="mt-8 grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-          <article className="rounded-[2rem] bg-slate-950 p-8 text-white shadow-lg">
-            <p className="text-sm uppercase tracking-[0.3em] text-emerald-300">Cuenta</p>
-            <dl className="mt-6 space-y-4 text-sm text-slate-300">
+        <section style={{ display: 'grid', gap: '1.5rem', gridTemplateColumns: '1fr 1fr' }}>
+          <article className="login-card" style={{ backgroundColor: 'var(--ep-text)', color: 'white' }}>
+            <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ep-brand-light)', margin: 0 }}>Cuenta</p>
+            <dl style={{ marginTop: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem', fontSize: '0.95rem' }}>
               <div>
-                <dt className="text-slate-400">Correo</dt>
-                <dd className="mt-1 text-base font-medium text-white">{user.email}</dd>
+                <dt style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>Correo</dt>
+                <dd style={{ marginTop: '0.35rem', fontSize: '1rem', fontWeight: 600 }}>{user.email}</dd>
               </div>
               <div>
-                <dt className="text-slate-400">Estado</dt>
-                <dd className="mt-1 text-base font-medium text-white">{user.estadoCuenta}</dd>
+                <dt style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>Estado</dt>
+                <dd style={{ marginTop: '0.35rem', fontSize: '1rem', fontWeight: 600 }}>{user.estadoCuenta}</dd>
               </div>
               <div>
-                <dt className="text-slate-400">Parqueo permanente</dt>
-                <dd className="mt-1 text-base font-medium text-white">
+                <dt style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>Parqueo permanente</dt>
+                <dd style={{ marginTop: '0.35rem', fontSize: '1rem', fontWeight: 600 }}>
                   {user.parqueoPermanente ? 'Sí' : 'No'}
                 </dd>
               </div>
             </dl>
           </article>
 
-          <article className="rounded-[2rem] bg-white p-8 shadow-sm">
-            <p className="text-sm font-semibold uppercase tracking-[0.3em] text-slate-500">Permisos cargados</p>
-            <h2 className="mt-3 text-2xl font-bold">Matriz activa del rol {user.role.name}</h2>
-            <p className="mt-3 text-sm leading-6 text-slate-600">
+          <article className="login-card" style={{ padding: '1.5rem 1.75rem' }}>
+            <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ep-text-muted)', margin: 0 }}>Permisos cargados</p>
+            <h2 style={{ margin: '1rem 0 0', fontSize: '1.5rem', fontWeight: 700, color: 'var(--ep-text)' }}>Matriz activa del rol {user.role.name}</h2>
+            <p style={{ margin: '0.75rem 0 0', fontSize: '0.95rem', lineHeight: 1.6, color: 'var(--ep-text-soft)' }}>
               Esta lista sale de la relación Role → RolePermission → Permission definida en Prisma.
             </p>
-            <ul className="mt-6 grid gap-3 sm:grid-cols-2">
+            <ul style={{ marginTop: '1.25rem', display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))' }}>
               {user.role.permissions.map((permission) => (
                 <li
                   key={permission}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700"
+                  style={{ borderRadius: '1rem', border: '1.5px solid var(--ep-line)', backgroundColor: 'var(--ep-surface)', padding: '1rem', fontSize: '0.9rem', fontWeight: 600, color: 'var(--ep-text)' }}
                 >
                   {permission}
                 </li>
@@ -74,8 +80,10 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           </article>
         </section>
 
-        <section className="mt-8">
-          <ReservaForm />
+        <section>
+          <div className="login-card" style={{ padding: 0 }}>
+            <ReservaForm user={user} />
+          </div>
         </section>
       </div>
     </main>

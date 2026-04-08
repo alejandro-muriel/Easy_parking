@@ -1,3 +1,6 @@
+// Data Models: Sistema de gestión de plazas de parqueo con autenticación y reservas
+// Cambios: Se reorganizó el schema, se agregaron modelos PlazaParqueo, Reserva y Horario
+
 generator client {
   provider = "prisma-client-js"
 }

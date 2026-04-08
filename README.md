@@ -156,8 +156,8 @@ Configuracion con Vitest + jsdom + Testing Library.
 
 Estado actual:
 
-- Test files: `6`
-- Tests: `34` pasando
+- Test files: `9`
+- Tests: `46` pasando
 - Coverage total:
   - Statements: `100%`
   - Branches: `89.36%`

@@ -181,7 +181,7 @@ Estado actual:
 
 - Sebastian Gonzalez G.
 - Juan Diego Cano
-- Santiago Ramoz
+- Santiago Ramos Gonzalez
 - Alejandro Muriel
 - Jose Luis Baez
 

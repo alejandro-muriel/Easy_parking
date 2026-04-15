@@ -177,6 +177,14 @@ Estado actual:
 - F-03: asignacion/liberacion por celador (pendiente)
 - F-04: mapa visual de plazas (pendiente)
 
+## Autores
+
+- Sebastian Gonzalez G.
+- Juan Diego Cano
+- Santiago Ramoz
+- Alejandro Muriel
+- Jose Luis Baez
+
 ## Licencia
 
 ISC

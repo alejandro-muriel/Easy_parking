@@ -115,7 +115,7 @@ export class Reserva {
     // Reservar la plaza
     const plaza = await PlazaParqueo.findById(idPlaza);
     if (plaza) {
-      await plaza.reservar(reserva.id);
+      await plaza.reservar();
     }
 
     return Reserva.fromDB(reserva);

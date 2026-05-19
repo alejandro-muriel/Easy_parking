@@ -6,12 +6,13 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import ReservaActivaList from '@/components/reserva/reserva-activa-list';
 
 interface Horario {
   id: string;
   materia: string;
-  horaInicio: Date;
-  horaFin: Date;
+  horaInicio: string;
+  horaFin: string;
   diaSemana: string;
 }
 
@@ -26,17 +27,35 @@ interface Plaza {
 
 interface ReservaFormProps {
   user: any;
+  selectedHorario?: string;
+  selectedPlaza?: string;
+  onSelectedHorarioChange?: (horarioId: string) => void;
+  onSelectedPlazaChange?: (plazaId: string) => void;
+  onSelectedHorarioObjectChange?: (horario: Horario | null) => void;
+  onSelectedPlazaObjectChange?: (plaza: Plaza | null) => void;
+  onConfirmReserva?: (horario: Horario | null, plaza: Plaza | null) => void;
 }
 
-export default function ReservaForm({ user }: ReservaFormProps) {
+export default function ReservaForm({
+  user,
+  selectedHorario,
+  selectedPlaza,
+  onSelectedHorarioChange,
+  onSelectedPlazaChange,
+  onSelectedHorarioObjectChange,
+  onSelectedPlazaObjectChange,
+  onConfirmReserva,
+}: ReservaFormProps) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [horarios, setHorarios] = useState<Horario[]>([]);
   const [plazas, setPlazas] = useState<Plaza[]>([]);
-  const [selectedHorario, setSelectedHorario] = useState('');
-  const [selectedPlaza, setSelectedPlaza] = useState('');
-  const [isFormValid, setIsFormValid] = useState(false);
+  const [internalSelectedHorario, setInternalSelectedHorario] = useState('');
+  const [internalSelectedPlaza, setInternalSelectedPlaza] = useState('');
+
+  const currentSelectedHorario = selectedHorario ?? internalSelectedHorario;
+  const currentSelectedPlaza = selectedPlaza ?? internalSelectedPlaza;
 
   // Cargar datos iniciales
   const loadInitialData = async () => {
@@ -78,18 +97,38 @@ export default function ReservaForm({ user }: ReservaFormProps) {
   // Validar formulario
   const handleHorarioChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
-    setSelectedHorario(value);
+    if (onSelectedHorarioChange) {
+      onSelectedHorarioChange(value);
+    } else {
+      setInternalSelectedHorario(value);
+    }
     setError('');
-    setIsFormValid(!!value && !!selectedPlaza);
   };
 
   const handlePlazaChange = (_: React.MouseEvent<HTMLButtonElement>, plazaId: string) => {
-    setSelectedPlaza((current) => (current === plazaId ? '' : plazaId));
+    const newValue = currentSelectedPlaza === plazaId ? '' : plazaId;
+    if (onSelectedPlazaChange) {
+      onSelectedPlazaChange(newValue);
+    } else {
+      setInternalSelectedPlaza(newValue);
+    }
     setError('');
-    setIsFormValid(!!selectedHorario && (selectedPlaza !== plazaId || !!selectedHorario));
   };
 
-  const selectedHorarioObject = horarios.find((horario) => horario.id === selectedHorario);
+  const selectedHorarioObject = horarios.find((horario) => horario.id === currentSelectedHorario);
+  const selectedPlazaObject = plazas.find((plaza) => plaza.id === currentSelectedPlaza);
+
+  useEffect(() => {
+    if (onSelectedHorarioObjectChange) {
+      onSelectedHorarioObjectChange(selectedHorarioObject ?? null);
+    }
+  }, [selectedHorarioObject, onSelectedHorarioObjectChange]);
+
+  useEffect(() => {
+    if (onSelectedPlazaObjectChange) {
+      onSelectedPlazaObjectChange(selectedPlazaObject ?? null);
+    }
+  }, [selectedPlazaObject, onSelectedPlazaObjectChange]);
 
   const plazasPorZona = plazas.reduce<Record<string, Plaza[]>>((acc, plaza) => {
     if (!acc[plaza.zona]) acc[plaza.zona] = [];
@@ -101,7 +140,7 @@ export default function ReservaForm({ user }: ReservaFormProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!selectedHorario || !selectedPlaza) {
+    if (!currentSelectedHorario || !currentSelectedPlaza) {
       setError('Selecciona un horario y una plaza');
       return;
     }
@@ -114,14 +153,18 @@ export default function ReservaForm({ user }: ReservaFormProps) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          horarioId: selectedHorario,
-          plazaId: selectedPlaza,
+          horarioId: currentSelectedHorario,
+          plazaId: currentSelectedPlaza,
         }),
       });
 
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.message || 'Error al crear reserva');
+      }
+
+      if (onConfirmReserva) {
+        onConfirmReserva(selectedHorarioObject ?? null, selectedPlazaObject ?? null);
       }
 
       router.push('/dashboard?success=Reserva creada exitosamente! Verifica tu correo.');
@@ -160,7 +203,7 @@ export default function ReservaForm({ user }: ReservaFormProps) {
             {loading ? 'Cargando...' : horarios.length > 0 ? 'Recargar horarios' : 'Cargar horarios'}
           </button>
 
-          {selectedHorario && (
+          {currentSelectedHorario && (
             <div style={{ borderRadius: '999px', backgroundColor: '#f0fdf4', padding: '0.5rem 1rem', fontSize: '0.875rem', color: '#166534', border: '1px solid #bbf7d0' }}>
               Horario seleccionado
             </div>
@@ -174,7 +217,7 @@ export default function ReservaForm({ user }: ReservaFormProps) {
         {horarios.length > 0 && (
           <>
             <select
-              value={selectedHorario}
+              value={currentSelectedHorario}
               onChange={handleHorarioChange}
               className="form-select"
               style={{ marginTop: '1rem' }}
@@ -189,12 +232,12 @@ export default function ReservaForm({ user }: ReservaFormProps) {
 
             <div style={{ marginTop: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
               {horarios.map((horario) => {
-                const isSelected = selectedHorario === horario.id;
+                const isSelected = currentSelectedHorario === horario.id;
                 return (
                   <button
                     key={horario.id}
                     type="button"
-                    onClick={(e) => handleHorarioChange({ target: { value: horario.id } } as React.ChangeEvent<HTMLSelectElement>)}
+                    onClick={() => handleHorarioChange({ target: { value: horario.id } } as React.ChangeEvent<HTMLSelectElement>)}
                     style={{
                       borderRadius: 'var(--ep-radius-card)',
                       border: `2px solid ${isSelected ? 'var(--ep-brand)' : 'var(--ep-line)'}`,
@@ -257,7 +300,7 @@ export default function ReservaForm({ user }: ReservaFormProps) {
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', gap: '0.75rem' }}>
                   {plazasZona.map((plaza) => {
-                    const isSelected = selectedPlaza === plaza.id;
+                    const isSelected = currentSelectedPlaza === plaza.id;
                     const isAvailable = plaza.estado === 'DISPONIBLE';
 
                     return (
@@ -292,7 +335,7 @@ export default function ReservaForm({ user }: ReservaFormProps) {
           </div>
         )}
 
-        {selectedPlaza && (
+        {currentSelectedPlaza && (
           <div style={{ marginTop: '1.5rem', borderRadius: '999px', backgroundColor: '#f0fdf4', padding: '0.5rem 1rem', fontSize: '0.875rem', color: '#166534', border: '1px solid #bbf7d0' }}>
             Plaza seleccionada
           </div>
@@ -312,7 +355,7 @@ export default function ReservaForm({ user }: ReservaFormProps) {
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <button
             type="submit"
-            disabled={!selectedHorario || !selectedPlaza || loading}
+            disabled={!currentSelectedHorario || !currentSelectedPlaza || loading}
             className="btn-primary"
             style={{ marginTop: '0.25rem' }}
           >
@@ -323,6 +366,10 @@ export default function ReservaForm({ user }: ReservaFormProps) {
           </p>
         </form>
       </article>
+
+      <div style={{ marginTop: '1.5rem' }}>
+        <ReservaActivaList />
+      </div>
     </div>
   );
 }

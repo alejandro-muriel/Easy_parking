@@ -30,7 +30,7 @@
       ]
     },
     "noEmit": true,
-    "types": ["@prisma/client"],
+    "types": ["@prisma/client", "next", "node"],
     "incremental": true,
     "plugins": [
       {

@@ -32,7 +32,7 @@ export class PlazaParqueo {
   }
 
   // Método específico: reservar
-  async reservar(reservaId: string): Promise<void> {
+  async reservar(): Promise<void> {
     if (this.estado !== EstadoPlaza.DISPONIBLE) {
       throw new Error('La plaza no está disponible para reservar');
     }

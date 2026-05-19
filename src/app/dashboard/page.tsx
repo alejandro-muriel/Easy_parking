@@ -1,6 +1,7 @@
 // Dashboard - Panel de Usuario
 // Cambios: Se agregó soporte para mensajes de éxito y se integró el formulario de reservas
 
+import Link from 'next/link';
 import { LogoutButton } from '@/components/auth/logout-button';
 import ReservaForm from '@/components/reserva/reserva-form';
 import { requireAuth } from '@/server/auth/guards';
@@ -61,6 +62,34 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             </dl>
           </article>
 
+          <article className="login-card" style={{ padding: '1.5rem 1.75rem', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            <div>
+              <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ep-text-muted)', margin: 0 }}>Reserva activa</p>
+              <h2 style={{ margin: '0.75rem 0 0', fontSize: '1.5rem', fontWeight: 700, color: 'var(--ep-text)' }}>Gestiona tus reservas</h2>
+              <p style={{ margin: '0.75rem 0 0', fontSize: '0.95rem', lineHeight: 1.6, color: 'var(--ep-text-soft)' }}>
+                Mira tus reservas activas o verifica si no hay ninguna reserva vigente.
+              </p>
+            </div>
+            <Link
+              href="/reserva"
+              style={{
+                marginTop: '1.5rem',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '100%',
+                backgroundColor: 'var(--ep-brand)',
+                color: '#fff',
+                borderRadius: 'var(--ep-radius-btn)',
+                padding: '0.85rem 1rem',
+                textDecoration: 'none',
+                fontSize: '0.95rem',
+                fontWeight: 700,
+              }}
+            >
+              Ver reservas activas
+            </Link>
+          </article>
           <article className="login-card" style={{ padding: '1.5rem 1.75rem' }}>
             <p style={{ fontSize: '0.75rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--ep-text-muted)', margin: 0 }}>Permisos cargados</p>
             <h2 style={{ margin: '1rem 0 0', fontSize: '1.5rem', fontWeight: 700, color: 'var(--ep-text)' }}>Matriz activa del rol {user.role.name}</h2>

@@ -147,3 +147,94 @@ export async function POST(request: NextRequest) {
     );
   }
 }
+
+// GET /api/reservas - Listar reservas activas del usuario y validar compatibilidad con su horario
+export async function GET() {
+  try {
+    const user = await requireAuth();
+
+    const reservas = await prisma.reserva.findMany({
+      where: {
+        idUsuario: user.id,
+        estado: { in: ['ACTIVA', 'EXTENDIDA'] },
+      },
+      include: {
+        plaza: true,
+        extensiones: {
+          select: {
+            minutosExtendidos: true,
+          },
+        },
+      },
+      orderBy: { fechaHoraInicio: 'asc' },
+    });
+
+    if (!reservas || reservas.length === 0) {
+      return NextResponse.json(
+        { message: 'No tiene reservas vigentes', reservas: [] },
+        { status: 200 }
+      );
+    }
+
+    const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+
+    const resultado = await Promise.all(
+      reservas.map(async (r) => {
+        const fechaInicio = new Date(r.fechaHoraInicio);
+        const fechaFin = new Date(r.fechaHoraFin);
+        const dia = dias[fechaInicio.getDay()];
+
+        // Buscar un horario del usuario para el mismo día
+        const horario = await prisma.horario.findFirst({
+          where: {
+            idUsuario: user.id,
+            diaSemana: dia,
+          },
+        });
+
+        let horarioCompatible = false;
+        let horarioInfo = null;
+
+        if (horario) {
+          const rStartMin = fechaInicio.getHours() * 60 + fechaInicio.getMinutes();
+          const rEndMin = fechaFin.getHours() * 60 + fechaFin.getMinutes();
+
+          const hStartMin = horario.horaInicio.getHours() * 60 + horario.horaInicio.getMinutes();
+          const hEndMin = horario.horaFin.getHours() * 60 + horario.horaFin.getMinutes();
+
+          horarioCompatible = rStartMin >= hStartMin && rEndMin <= hEndMin;
+
+          if (horarioCompatible) {
+            horarioInfo = {
+              id: horario.id,
+              materia: horario.materia,
+              horaInicio: horario.horaInicio,
+              horaFin: horario.horaFin,
+              diaSemana: horario.diaSemana,
+            };
+          }
+        }
+
+        return {
+          id: r.id,
+          fechaHoraInicio: r.fechaHoraInicio,
+          fechaHoraFin: r.fechaHoraFin,
+          estado: r.estado,
+          plaza: r.plaza,
+          extensionCount: r.extensiones.length,
+          totalExtendedMinutes: r.extensiones.reduce((acc, item) => acc + item.minutosExtendidos, 0),
+          horarioCompatible,
+          horario: horarioInfo,
+        };
+      })
+    );
+
+    return NextResponse.json({ reservas: resultado }, { status: 200 });
+  } catch (error) {
+    console.error('Error fetching reservas:', error);
+    return NextResponse.json(
+      { message: 'Error al obtener reservas' },
+      { status: 500 }
+    );
+  }
+}

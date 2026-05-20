@@ -28,7 +28,9 @@ Aplicacion web para la gestion de parqueaderos del Politecnico Colombiano Jaime 
 - Consulta de plazas con filtros por estado y zona (`/api/plazas`)
 - Creacion de reservas (`/api/reservas`, `POST`) con validaciones de horario, disponibilidad y duplicados
 - Consulta de reservas activas del usuario (`/api/reservas`, `GET`)
-- Formulario de reserva y resumen en UI (`/reserva` y dashboard)
+- Extension de reserva con validacion previa (`/api/reservas/[id]/can-extend`) y ejecucion (`/api/reservas/[id]/extend`)
+- Cola FIFO por plaza para gestionar prioridad (`/api/plazas/[id]/cola`)
+- Formulario de reserva y resumen en UI (`/reserva` y dashboard), incluyendo modal de confirmacion para extensiones
 
 ### F-03/F-04: Operacion y visualizacion de plazas
 - Vista de celador con mapa visual por zonas (`/celador`)
@@ -62,7 +64,10 @@ src/
     api/auth/me/route.ts
     api/horarios/route.ts
     api/plazas/route.ts
+    api/plazas/[id]/cola/route.ts
     api/reservas/route.ts
+    api/reservas/[id]/can-extend/route.ts
+    api/reservas/[id]/extend/route.ts
     (parking)/reserva/page.tsx
     (parking)/celador/page.tsx
     dashboard/page.tsx
@@ -87,6 +92,10 @@ src/
   server/plazas/
     service.ts
     actions.ts
+  server/reservas/
+    config.ts
+    extension-service.ts
+    extension-service.test.ts
   lib/
     prisma.ts
   middleware.ts
@@ -104,7 +113,15 @@ DATABASE_URL="postgresql://USER:PASSWORD@HOST:5432/easy_parking"
 NEXTAUTH_URL="http://localhost:3000"
 NEXTAUTH_SECRET="cambiar-por-valor-seguro"
 APP_ENV="development"
+RESERVA_EXTENSION_MINUTES="20"
+RESERVA_EXTENSION_WINDOW_MINUTES="20"
+RESERVA_EXTENSION_MAX_COUNT="1"
 ```
+
+Notas de configuracion:
+- `RESERVA_EXTENSION_MINUTES`: minutos por extension (default `20`, rango `5-120`).
+- `RESERVA_EXTENSION_WINDOW_MINUTES`: tolerancia en minutos para solicitar extension despues del fin (default `20`, rango `0-60`).
+- `RESERVA_EXTENSION_MAX_COUNT`: maximo de extensiones por reserva (default `1`, rango `1-5`).
 
 ## Instalacion y ejecucion
 
@@ -167,6 +184,9 @@ npm run test:coverage
 - `/api/horarios` protegida por cookie/sesion
 - `/api/plazas` protegida por cookie/sesion
 - `/api/reservas` protegida por cookie/sesion
+- `/api/plazas/[id]/cola` protegida por cookie/sesion
+- `/api/reservas/[id]/can-extend` protegida por cookie/sesion
+- `/api/reservas/[id]/extend` protegida por cookie/sesion
 
 ## Modelos Prisma actuales
 
@@ -177,6 +197,8 @@ npm run test:coverage
 - `Session`
 - `PlazaParqueo`
 - `Reserva`
+- `ReservaExtension`
+- `ColaEspera`
 - `Horario`
 
 ## Usuarios demo (seed)
@@ -194,8 +216,8 @@ Configuracion con Vitest + jsdom + Testing Library.
 
 Estado actual:
 
-- Test files: `9`
-- Tests: `46` pasando
+- Test files: `11`
+- Tests: `52` pasando
 - Coverage total:
   - Statements: `54.2%`
   - Branches: `40.87%`
@@ -212,13 +234,13 @@ Estado actual:
 
 ### ÉPICA 1: Gestión de reservas de parqueo
 - Estado: En progreso avanzado
-- Implementado: creacion y consulta de reservas, validaciones de horario/disponibilidad, UI de reserva y resumen
+- Implementado: creacion y consulta de reservas, validaciones de horario/disponibilidad, extension de reservas con tolerancia, historial de extensiones, cola FIFO por plaza y UI de confirmacion
 - Falta: cancelacion/edicion de reserva, expiracion automatica de reservas vencidas, confirmacion real por correo (actualmente pendiente)
 
 ### ÉPICA 2: Consulta y visualización de disponibilidad de plazas
 - Estado: Implementada
-- Implementado: consulta de plazas por estado/zona, mapa visual en UI, leyenda y filtros por estado
-- Falta: visualizacion historica (tendencias de ocupacion) y mejoras UX de tiempo real
+- Implementado: consulta de plazas por estado/zona, mapa visual en UI, leyenda y filtros por estado, integracion de cola en UI para plazas no disponibles
+- Falta: visualizacion historica (tendencias de ocupacion), mejoras UX de tiempo real y panel dedicado de posicion en cola
 
 ### ÉPICA 3: Reportes y monitoreo del sistema
 - Estado: Pendiente

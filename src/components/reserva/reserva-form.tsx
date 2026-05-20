@@ -1,13 +1,14 @@
 'use client';
-
+ 
 // Formulario de Reserva - Componente Cliente
 // Implementa CU-02: Reservar plaza de parqueo
 // Permite seleccionar horario y plaza, con validación y confirmación
-
+// Soporta uso "controlado" (parent maneja la selección vía props) o "no controlado" (estado interno).
+ 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ReservaActivaList from '@/components/reserva/reserva-activa-list';
-
+ 
 interface Horario {
   id: string;
   materia: string;
@@ -15,7 +16,7 @@ interface Horario {
   horaFin: string;
   diaSemana: string;
 }
-
+ 
 interface Plaza {
   id: string;
   zona: string;
@@ -24,7 +25,7 @@ interface Plaza {
   estado: string;
   tipo: string;
 }
-
+ 
 interface ReservaFormProps {
   user: any;
   selectedHorario?: string;
@@ -35,7 +36,7 @@ interface ReservaFormProps {
   onSelectedPlazaObjectChange?: (plaza: Plaza | null) => void;
   onConfirmReserva?: (horario: Horario | null, plaza: Plaza | null) => void;
 }
-
+ 
 export default function ReservaForm({
   user,
   selectedHorario,
@@ -51,33 +52,36 @@ export default function ReservaForm({
   const [error, setError] = useState('');
   const [horarios, setHorarios] = useState<Horario[]>([]);
   const [plazas, setPlazas] = useState<Plaza[]>([]);
+ 
+  // Estado interno (fallback cuando el componente se usa sin props controlados)
   const [internalSelectedHorario, setInternalSelectedHorario] = useState('');
   const [internalSelectedPlaza, setInternalSelectedPlaza] = useState('');
-
+ 
+  // Si el padre pasa props, ganan; si no, usamos el estado interno
   const currentSelectedHorario = selectedHorario ?? internalSelectedHorario;
   const currentSelectedPlaza = selectedPlaza ?? internalSelectedPlaza;
-
+ 
   // Cargar datos iniciales
   const loadInitialData = async () => {
     if (!user?.id) {
       setError('No se encontró usuario autenticado. Recarga la página.');
       return;
     }
-
+ 
     try {
       setLoading(true);
       const [horarioRes, plazasRes] = await Promise.all([
         fetch('/api/horarios'),
         fetch('/api/plazas?estado=DISPONIBLE'),
       ]);
-
+ 
       if (!horarioRes.ok || !plazasRes.ok) {
         throw new Error('Error al cargar datos');
       }
-
+ 
       const horariosData = await horarioRes.json();
       const plazasData = await plazasRes.json();
-
+ 
       setHorarios(horariosData);
       setPlazas(plazasData);
     } catch (err) {
@@ -87,14 +91,14 @@ export default function ReservaForm({
       setLoading(false);
     }
   };
-
+ 
   useEffect(() => {
     if (user?.id) {
       loadInitialData();
     }
   }, [user?.id]);
-
-  // Validar formulario
+ 
+  // Manejo de cambios de horario
   const handleHorarioChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
     if (onSelectedHorarioChange) {
@@ -104,7 +108,8 @@ export default function ReservaForm({
     }
     setError('');
   };
-
+ 
+  // Manejo de cambios de plaza
   const handlePlazaChange = (_: React.MouseEvent<HTMLButtonElement>, plazaId: string) => {
     const newValue = currentSelectedPlaza === plazaId ? '' : plazaId;
     if (onSelectedPlazaChange) {
@@ -114,41 +119,41 @@ export default function ReservaForm({
     }
     setError('');
   };
-
+ 
   const selectedHorarioObject = horarios.find((horario) => horario.id === currentSelectedHorario);
   const selectedPlazaObject = plazas.find((plaza) => plaza.id === currentSelectedPlaza);
-
+ 
   useEffect(() => {
     if (onSelectedHorarioObjectChange) {
       onSelectedHorarioObjectChange(selectedHorarioObject ?? null);
     }
   }, [selectedHorarioObject, onSelectedHorarioObjectChange]);
-
+ 
   useEffect(() => {
     if (onSelectedPlazaObjectChange) {
       onSelectedPlazaObjectChange(selectedPlazaObject ?? null);
     }
   }, [selectedPlazaObject, onSelectedPlazaObjectChange]);
-
+ 
   const plazasPorZona = plazas.reduce<Record<string, Plaza[]>>((acc, plaza) => {
     if (!acc[plaza.zona]) acc[plaza.zona] = [];
     acc[plaza.zona].push(plaza);
     return acc;
   }, {});
-
+ 
   // Enviar reserva
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
+ 
     if (!currentSelectedHorario || !currentSelectedPlaza) {
       setError('Selecciona un horario y una plaza');
       return;
     }
-
+ 
     try {
       setLoading(true);
       setError('');
-
+ 
       const response = await fetch('/api/reservas', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -157,16 +162,16 @@ export default function ReservaForm({
           plazaId: currentSelectedPlaza,
         }),
       });
-
+ 
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.message || 'Error al crear reserva');
       }
-
+ 
       if (onConfirmReserva) {
         onConfirmReserva(selectedHorarioObject ?? null, selectedPlazaObject ?? null);
       }
-
+ 
       router.push('/dashboard?success=Reserva creada exitosamente! Verifica tu correo.');
     } catch (err: any) {
       setError(err.message || 'Error al crear la reserva');
@@ -174,7 +179,7 @@ export default function ReservaForm({
       setLoading(false);
     }
   };
-
+ 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
       {/* Paso 1: Seleccionar Horario */}
@@ -186,13 +191,13 @@ export default function ReservaForm({
             <p style={{ fontSize: '0.875rem', color: 'var(--ep-text-soft)', margin: '0.25rem 0 0' }}>Elige un horario válido para que la reserva se vincule correctamente.</p>
           </div>
         </div>
-
+ 
         {error && (
           <div className="form-error" style={{ marginBottom: '1.5rem' }}>
             {error}
           </div>
         )}
-
+ 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.75rem', flexWrap: 'wrap' }}>
           <button
             type="button"
@@ -202,18 +207,18 @@ export default function ReservaForm({
           >
             {loading ? 'Cargando...' : horarios.length > 0 ? 'Recargar horarios' : 'Cargar horarios'}
           </button>
-
+ 
           {currentSelectedHorario && (
             <div style={{ borderRadius: '999px', backgroundColor: '#f0fdf4', padding: '0.5rem 1rem', fontSize: '0.875rem', color: '#166534', border: '1px solid #bbf7d0' }}>
               Horario seleccionado
             </div>
           )}
         </div>
-
+ 
         {horarios.length === 0 && !loading && (
           <p style={{ margin: '1rem 0 0', fontSize: '0.875rem', color: 'var(--ep-text-muted)' }}>No tienes horarios registrados. Contacta a administración.</p>
         )}
-
+ 
         {horarios.length > 0 && (
           <>
             <select
@@ -229,7 +234,7 @@ export default function ReservaForm({
                 </option>
               ))}
             </select>
-
+ 
             <div style={{ marginTop: '1.5rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '0.75rem' }}>
               {horarios.map((horario) => {
                 const isSelected = currentSelectedHorario === horario.id;
@@ -261,7 +266,7 @@ export default function ReservaForm({
             </div>
           </>
         )}
-
+ 
         {selectedHorarioObject && (
           <div style={{ marginTop: '1rem', borderRadius: '999px', backgroundColor: '#f0fdf4', padding: '0.5rem 1rem', fontSize: '0.875rem', color: '#166534', border: '1px solid #bbf7d0' }}>
             <p style={{ fontWeight: 600, margin: 0 }}>Horario seleccionado</p>
@@ -270,7 +275,7 @@ export default function ReservaForm({
           </div>
         )}
       </article>
-
+ 
       {/* Paso 2: Seleccionar Plaza */}
       <article className="login-card">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
@@ -280,11 +285,11 @@ export default function ReservaForm({
             <p style={{ fontSize: '0.875rem', color: 'var(--ep-text-soft)', margin: '0.25rem 0 0' }}>Haz clic en una plaza disponible para reservarla.</p>
           </div>
         </div>
-
+ 
         {plazas.length === 0 && (
           <p style={{ fontSize: '0.875rem', color: 'var(--ep-text-muted)' }}>No hay plazas disponibles. Intenta más tarde.</p>
         )}
-
+ 
         {plazas.length > 0 && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
             {Object.entries(plazasPorZona).map(([zona, plazasZona]) => (
@@ -302,7 +307,7 @@ export default function ReservaForm({
                   {plazasZona.map((plaza) => {
                     const isSelected = currentSelectedPlaza === plaza.id;
                     const isAvailable = plaza.estado === 'DISPONIBLE';
-
+ 
                     return (
                       <button
                         key={plaza.id}
@@ -334,14 +339,14 @@ export default function ReservaForm({
             ))}
           </div>
         )}
-
+ 
         {currentSelectedPlaza && (
           <div style={{ marginTop: '1.5rem', borderRadius: '999px', backgroundColor: '#f0fdf4', padding: '0.5rem 1rem', fontSize: '0.875rem', color: '#166534', border: '1px solid #bbf7d0' }}>
             Plaza seleccionada
           </div>
         )}
       </article>
-
+ 
       {/* Paso 3: Confirmar */}
       <article className="login-card">
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.5rem' }}>
@@ -351,7 +356,7 @@ export default function ReservaForm({
             <p style={{ fontSize: '0.875rem', color: 'var(--ep-text-soft)', margin: '0.25rem 0 0' }}>Revisa tus selecciones antes de enviar la solicitud.</p>
           </div>
         </div>
-
+ 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
           <button
             type="submit"
@@ -366,7 +371,7 @@ export default function ReservaForm({
           </p>
         </form>
       </article>
-
+ 
       <div style={{ marginTop: '1.5rem' }}>
         <ReservaActivaList />
       </div>

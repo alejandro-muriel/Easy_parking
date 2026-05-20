@@ -2,7 +2,7 @@
 
 Aplicacion web para la gestion de parqueaderos del Politecnico Colombiano Jaime Isaza Cadavid.
 
-## Estado actual
+## Estado actual 
 
 - Version: `0.0.1`
 - Stack base operativo: Next.js 15 + TypeScript + Prisma + PostgreSQL + Tailwind 4
@@ -156,8 +156,8 @@ Configuracion con Vitest + jsdom + Testing Library.
 
 Estado actual:
 
-- Test files: `6`
-- Tests: `34` pasando
+- Test files: `9`
+- Tests: `46` pasando
 - Coverage total:
   - Statements: `100%`
   - Branches: `89.36%`
@@ -176,6 +176,14 @@ Estado actual:
 - F-02: reservas y cancelacion (pendiente)
 - F-03: asignacion/liberacion por celador (pendiente)
 - F-04: mapa visual de plazas (pendiente)
+
+## Autores
+
+- Sebastian Gonzalez G.
+- Juan Diego Cano
+- Santiago Ramos Gonzalez
+- Alejandro Muriel
+- Jose Luis Baez
 
 ## Licencia
 

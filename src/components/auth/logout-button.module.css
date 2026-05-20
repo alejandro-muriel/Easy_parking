@@ -1,0 +1,10 @@
+.dashHeaderActions button {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: var(--ep-radius-btn);
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}

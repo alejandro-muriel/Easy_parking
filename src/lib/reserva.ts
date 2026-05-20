@@ -205,4 +205,55 @@ export class Reserva {
 
     return data.map(Reserva.fromDB);
   }
+
+  // Método cancelar reserva por usuario
+  static async cancelarReservaUsuario(reservaId: string, idUsuario: string, txPrisma?: any): Promise<{ ok: boolean; mensaje: string }> {
+
+    const client = txPrisma || prisma;
+
+    const reservaActiva = await client.reserva.findFirst({
+      where: {
+        id: reservaId,
+        idUsuario: idUsuario,
+        estado: EstadoReserva.ACTIVA,
+      },
+    });
+
+    // CRITERIO DE ACEPTACIÓN: Informar si no hay reservas vigentes
+    if (!reservaActiva) {
+      return {
+        ok: false,
+        mensaje: 'No tienes ninguna reserva activa o vigente con el identificador proporcionado.',
+      };
+    }
+
+    try {
+      // 2. Ejecutamos la transacción usando el cliente asignado
+      await client.$transaction([
+        client.reserva.update({
+          where: { id: reservaId },
+          data: { estado: EstadoReserva.CANCELADA },
+        }),
+        client.plazaParqueo.update({
+          where: { id: reservaActiva.idPlaza },
+          data: {
+            estado: 'DISPONIBLE',
+            ultimoCambio: new Date(),
+          },
+        }),
+      ]);
+
+      return {
+        ok: true,
+        mensaje: 'La reserva ha sido cancelada exitosamente y la plaza asignada se encuentra libre.',
+      };
+
+    } catch (error) {
+      console.error('Error al ejecutar la transacción de cancelación:', error);
+      return {
+        ok: false,
+        mensaje: 'Ocurrió un error en el servidor al procesar la cancelación.',
+      };
+    }
+  }
 }

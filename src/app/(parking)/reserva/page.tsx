@@ -2,9 +2,12 @@
 // Implementa CU-02: Reservar plaza de parqueo
 // Permite a usuarios reservar plazas vinculadas a su horario académico
 
+import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/server/auth/guards';
 import ReservaPageShell from '@/components/reserva/reserva-page-shell';
 import { LogoutButton } from '@/components/auth/logout-button';
+import { BotonCancelarReserva } from '@/components/reserva/boton-cancelar';
+import { EstadoReserva } from '@prisma/client';
 import Link from 'next/link';
 
 interface ReservaPageProps {
@@ -16,6 +19,16 @@ export default async function ReservaPage({ searchParams }: ReservaPageProps) {
   const params = await searchParams;
   const error = params.error as string;
   const success = params.success as string;
+
+  const reservasVigentes = await prisma.reserva.findMany({
+    where: {
+      idUsuario: user.id,
+      estado: EstadoReserva.ACTIVA
+    },
+    include: {
+      plaza: true
+    }
+  });
 
   return (
     <main style={{ minHeight: '100vh', backgroundColor: 'var(--ep-bg)', padding: '2rem' }}>
@@ -44,6 +57,7 @@ export default async function ReservaPage({ searchParams }: ReservaPageProps) {
             <LogoutButton />
           </div>
         </header>
+        
 
         {/* Mensajes de estado */}
         {error && (
@@ -61,6 +75,51 @@ export default async function ReservaPage({ searchParams }: ReservaPageProps) {
         )}
 
         <ReservaPageShell user={user} />
+
+        <div className="login-card" style={{ padding: '1.5rem' }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem', color: 'var(--ep-text)' }}>
+            Mis Reservas Vigentes (HU-06)
+          </h2>
+          
+          {reservasVigentes.length === 0 ? (
+            <p style={{ fontSize: '0.875rem', color: 'var(--ep-text-soft)', margin: 0 }}>
+              No tienes ninguna reserva activa en el sistema actualmente.
+            </p>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {reservasVigentes.map((reserva) => (
+                <div 
+                  key={reserva.id} 
+                  style={{ 
+                    display: 'flex', 
+                    justifyContent: 'space-between', 
+                    alignItems: 'center', 
+                    padding: '1rem', 
+                    border: '1.5px solid var(--ep-line)', 
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--ep-surface)' 
+                  }}
+                >
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 700, color: 'var(--ep-text)' }}>
+                      Plaza Seleccionada: Zona {reserva.plaza.zona} - Fila {reserva.plaza.fila} # {reserva.plaza.numero}
+                    </p>
+                    <p style={{ margin: '0.25rem 0 0', fontSize: '0.85rem', color: 'var(--ep-text-soft)' }}>
+                      Válida desde: {new Date(reserva.fechaHoraInicio).toLocaleString('es-CO')}
+                    </p>
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--ep-text-soft)' }}>
+                      Hasta: {new Date(reserva.fechaHoraFin).toLocaleString('es-CO')}
+                    </p>
+                  </div>
+                  
+                  {/* Botón interactivo cliente */}
+                  <BotonCancelarReserva reservaId={reserva.id} />
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
     </main>
   );

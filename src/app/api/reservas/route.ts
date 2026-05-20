@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/server/auth/guards';
+import { Reserva } from '@/lib/reserva';
 
 export async function POST(request: NextRequest) {
   try {
@@ -158,14 +159,7 @@ export async function GET() {
         idUsuario: user.id,
         estado: { in: ['ACTIVA', 'EXTENDIDA'] },
       },
-      include: {
-        plaza: true,
-        extensiones: {
-          select: {
-            minutosExtendidos: true,
-          },
-        },
-      },
+      include: { plaza: true },
       orderBy: { fechaHoraInicio: 'asc' },
     });
 
@@ -221,8 +215,6 @@ export async function GET() {
           fechaHoraFin: r.fechaHoraFin,
           estado: r.estado,
           plaza: r.plaza,
-          extensionCount: r.extensiones.length,
-          totalExtendedMinutes: r.extensiones.reduce((acc, item) => acc + item.minutosExtendidos, 0),
           horarioCompatible,
           horario: horarioInfo,
         };
@@ -234,6 +226,43 @@ export async function GET() {
     console.error('Error fetching reservas:', error);
     return NextResponse.json(
       { message: 'Error al obtener reservas' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const user = await requireAuth();
+    
+    const body = await request.json();
+    const { reservaId } = body;
+
+    if (!reservaId) {
+      return NextResponse.json(
+        { message: 'Debe proporcionar el identificador reservaId' },
+        { status: 400 }
+      );
+    }
+    
+    const resultado = await Reserva.cancelarReservaUsuario(reservaId, user.id);
+
+    if (!resultado.ok) {
+      return NextResponse.json(
+        { message: resultado.mensaje },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { message: resultado.mensaje },
+      { status: 200 } // 200 OK
+    );
+
+  } catch (error) {
+    console.error('Error en PATCH /api/reservas:', error);
+    return NextResponse.json(
+      { message: 'Error interno en el servidor al procesar la cancelación' },
       { status: 500 }
     );
   }

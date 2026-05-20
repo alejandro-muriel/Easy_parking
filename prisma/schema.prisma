@@ -1,6 +1,3 @@
-// Data Models: Sistema de gestión de plazas de parqueo con autenticación y reservas
-// Cambios: Se reorganizó el schema, se agregaron modelos PlazaParqueo, Reserva y Horario
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -66,6 +63,7 @@ model User {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
   horarios          Horario[]
+  colaEspera        ColaEspera[]
   reservas          Reserva[]
   sessions          Session[]
   role              Role      @relation(fields: [roleId], references: [id])
@@ -104,6 +102,7 @@ model PlazaParqueo {
   tipo                 TipoPlaza   @default(NORMAL)
   ultimoCambio         DateTime    @default(now())
   bloqueoTemporalHasta DateTime?
+  colaEspera           ColaEspera[]
   capacidadVecina      String?
   reservas             Reserva[]
 
@@ -123,6 +122,7 @@ model Reserva {
   estado          EstadoReserva @default(ACTIVA)
   fechaCreacion   DateTime      @default(now())
   metodoPago      String?
+  extensiones     ReservaExtension[]
   plaza           PlazaParqueo  @relation(fields: [idPlaza], references: [id], onDelete: Cascade)
   usuario         User          @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
 
@@ -132,6 +132,36 @@ model Reserva {
   @@index([fechaHoraInicio])
   @@index([fechaHoraFin])
   @@map("reservas")
+}
+
+/// Cola FIFO de espera por plaza para futuras asignaciones/extensiones
+model ColaEspera {
+  id            String     @id @default(cuid())
+  idUsuario     String
+  idPlaza       String
+  estado        EstadoCola @default(ACTIVA)
+  fechaRegistro DateTime   @default(now())
+  fechaCambio   DateTime   @updatedAt
+  plaza         PlazaParqueo @relation(fields: [idPlaza], references: [id], onDelete: Cascade)
+  usuario       User       @relation(fields: [idUsuario], references: [id], onDelete: Cascade)
+
+  @@index([idPlaza, estado, fechaRegistro])
+  @@index([idUsuario, estado])
+  @@map("cola_espera")
+}
+
+/// Historial de extensiones aplicadas sobre una reserva
+model ReservaExtension {
+  id                  String   @id @default(cuid())
+  reservaId           String
+  minutosExtendidos   Int
+  fechaHoraFinAnterior DateTime
+  fechaHoraFinNueva   DateTime
+  createdAt           DateTime @default(now())
+  reserva             Reserva  @relation(fields: [reservaId], references: [id], onDelete: Cascade)
+
+  @@index([reservaId, createdAt])
+  @@map("reserva_extensiones")
 }
 
 /// Horario académico del usuario
@@ -172,4 +202,11 @@ enum EstadoReserva {
   CANCELADA
   EXPIRADA
   EXTENDIDA
+}
+
+/// Estados de una entrada en cola de espera
+enum EstadoCola {
+  ACTIVA
+  ATENDIDA
+  CANCELADA
 }

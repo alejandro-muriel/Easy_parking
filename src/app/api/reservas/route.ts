@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/server/auth/guards';
+import { Reserva } from '@/lib/reserva';
 
 export async function POST(request: NextRequest) {
   try {
@@ -143,6 +144,125 @@ export async function POST(request: NextRequest) {
     console.error('Error creating reserva:', error);
     return NextResponse.json(
       { message: 'Error al crear la reserva' },
+      { status: 500 }
+    );
+  }
+}
+
+// GET /api/reservas - Listar reservas activas del usuario y validar compatibilidad con su horario
+export async function GET() {
+  try {
+    const user = await requireAuth();
+
+    const reservas = await prisma.reserva.findMany({
+      where: {
+        idUsuario: user.id,
+        estado: { in: ['ACTIVA', 'EXTENDIDA'] },
+      },
+      include: { plaza: true },
+      orderBy: { fechaHoraInicio: 'asc' },
+    });
+
+    if (!reservas || reservas.length === 0) {
+      return NextResponse.json(
+        { message: 'No tiene reservas vigentes', reservas: [] },
+        { status: 200 }
+      );
+    }
+
+    const dias = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
+
+    const resultado = await Promise.all(
+      reservas.map(async (r) => {
+        const fechaInicio = new Date(r.fechaHoraInicio);
+        const fechaFin = new Date(r.fechaHoraFin);
+        const dia = dias[fechaInicio.getDay()];
+
+        // Buscar un horario del usuario para el mismo día
+        const horario = await prisma.horario.findFirst({
+          where: {
+            idUsuario: user.id,
+            diaSemana: dia,
+          },
+        });
+
+        let horarioCompatible = false;
+        let horarioInfo = null;
+
+        if (horario) {
+          const rStartMin = fechaInicio.getHours() * 60 + fechaInicio.getMinutes();
+          const rEndMin = fechaFin.getHours() * 60 + fechaFin.getMinutes();
+
+          const hStartMin = horario.horaInicio.getHours() * 60 + horario.horaInicio.getMinutes();
+          const hEndMin = horario.horaFin.getHours() * 60 + horario.horaFin.getMinutes();
+
+          horarioCompatible = rStartMin >= hStartMin && rEndMin <= hEndMin;
+
+          if (horarioCompatible) {
+            horarioInfo = {
+              id: horario.id,
+              materia: horario.materia,
+              horaInicio: horario.horaInicio,
+              horaFin: horario.horaFin,
+              diaSemana: horario.diaSemana,
+            };
+          }
+        }
+
+        return {
+          id: r.id,
+          fechaHoraInicio: r.fechaHoraInicio,
+          fechaHoraFin: r.fechaHoraFin,
+          estado: r.estado,
+          plaza: r.plaza,
+          horarioCompatible,
+          horario: horarioInfo,
+        };
+      })
+    );
+
+    return NextResponse.json({ reservas: resultado }, { status: 200 });
+  } catch (error) {
+    console.error('Error fetching reservas:', error);
+    return NextResponse.json(
+      { message: 'Error al obtener reservas' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PATCH(request: NextRequest) {
+  try {
+    const user = await requireAuth();
+    
+    const body = await request.json();
+    const { reservaId } = body;
+
+    if (!reservaId) {
+      return NextResponse.json(
+        { message: 'Debe proporcionar el identificador reservaId' },
+        { status: 400 }
+      );
+    }
+    
+    const resultado = await Reserva.cancelarReservaUsuario(reservaId, user.id);
+
+    if (!resultado.ok) {
+      return NextResponse.json(
+        { message: resultado.mensaje },
+        { status: 400 }
+      );
+    }
+
+    return NextResponse.json(
+      { message: resultado.mensaje },
+      { status: 200 } // 200 OK
+    );
+
+  } catch (error) {
+    console.error('Error en PATCH /api/reservas:', error);
+    return NextResponse.json(
+      { message: 'Error interno en el servidor al procesar la cancelación' },
       { status: 500 }
     );
   }

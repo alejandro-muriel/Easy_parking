@@ -7,10 +7,13 @@ Aplicacion web para la gestion de parqueaderos del Politecnico Colombiano Jaime 
 - Version: `0.0.1`
 - Stack base operativo: Next.js 15 + TypeScript + Prisma + PostgreSQL + Tailwind 4
 - F-01 (autenticacion y autorizacion): implementado y probado
-- F-02 (reservas): pendiente
+- F-02 (gestion de reservas): implementado y probado
+- F-03 (operacion de plazas por celador): implementado de forma parcial (sin flujo completo de auditoria)
+- F-04 (mapa visual de plazas): implementado para consulta y operacion
 
-## Funcionalidad implementada (F-01)
+## Funcionalidad implementada
 
+### F-01: Autenticacion y autorizacion
 - Login con email institucional y password
 - Sesiones persistidas en base de datos (no JWT)
 - Cookie de sesion `httpOnly`
@@ -20,14 +23,27 @@ Aplicacion web para la gestion de parqueaderos del Politecnico Colombiano Jaime 
 - Middleware para redireccion a login cuando no hay sesion
 - Dashboard protegido
 
+### F-02: Gestion de reservas de parqueo
+- Consulta de horarios del usuario (`/api/horarios`)
+- Consulta de plazas con filtros por estado y zona (`/api/plazas`)
+- Creacion de reservas (`/api/reservas`, `POST`) con validaciones de horario, disponibilidad y duplicados
+- Consulta de reservas activas del usuario (`/api/reservas`, `GET`)
+- Formulario de reserva y resumen en UI (`/reserva` y dashboard)
+
+### F-03/F-04: Operacion y visualizacion de plazas
+- Vista de celador con mapa visual por zonas (`/celador`)
+- Acciones de asignar, liberar, bloquear y desbloquear plazas
+- Conteo por estado (disponible, ocupada, reservada, bloqueada)
+- Bloqueo temporal de plazas tras liberacion y desbloqueo automatico por expiracion
+
 ## Tecnologias
 
 - Node.js `>=20`
 - npm `>=10`
 - Next.js `^15.0.0`
 - React `^19.0.0`
-- TypeScript `^5.3.0`
-- Prisma `^6.19.2`
+- TypeScript `^6.0.2`
+- Prisma `^6.19.3`
 - PostgreSQL
 - Vitest + Testing Library
 
@@ -44,6 +60,11 @@ src/
     api/auth/login/route.ts
     api/auth/logout/route.ts
     api/auth/me/route.ts
+    api/horarios/route.ts
+    api/plazas/route.ts
+    api/reservas/route.ts
+    (parking)/reserva/page.tsx
+    (parking)/celador/page.tsx
     dashboard/page.tsx
     login/page.tsx
     page.tsx
@@ -52,11 +73,20 @@ src/
   components/auth/
     login-form.tsx
     logout-button.tsx
+  components/reserva/
+    reserva-form.tsx
+    reserva-summary-list.tsx
+  components/celador/
+    PlazaGrid.tsx
+    PlazaCard.tsx
   server/auth/
     config.ts
     session.ts
     service.ts
     guards.ts
+  server/plazas/
+    service.ts
+    actions.ts
   lib/
     prisma.ts
   middleware.ts
@@ -129,9 +159,14 @@ npm run test:coverage
 - `/` redirige a `/dashboard`
 - `/login` publica
 - `/dashboard` protegida por sesion
+- `/reserva` protegida por sesion
+- `/celador` protegida por sesion y permisos de rol
 - `/api/auth/login` publica
 - `/api/auth/logout` protegida por cookie/sesion
 - `/api/auth/me` protegida por cookie/sesion
+- `/api/horarios` protegida por cookie/sesion
+- `/api/plazas` protegida por cookie/sesion
+- `/api/reservas` protegida por cookie/sesion
 
 ## Modelos Prisma actuales
 
@@ -140,6 +175,9 @@ npm run test:coverage
 - `RolePermission`
 - `User`
 - `Session`
+- `PlazaParqueo`
+- `Reserva`
+- `Horario`
 
 ## Usuarios demo (seed)
 
@@ -159,10 +197,10 @@ Estado actual:
 - Test files: `9`
 - Tests: `46` pasando
 - Coverage total:
-  - Statements: `100%`
-  - Branches: `89.36%`
-  - Functions: `100%`
-  - Lines: `100%`
+  - Statements: `54.2%`
+  - Branches: `40.87%`
+  - Functions: `51.11%`
+  - Lines: `55.48%`
 
 ## Notas tecnicas
 
@@ -172,10 +210,25 @@ Estado actual:
 
 ## Roadmap corto
 
-- F-01: completado
-- F-02: reservas y cancelacion (pendiente)
-- F-03: asignacion/liberacion por celador (pendiente)
-- F-04: mapa visual de plazas (pendiente)
+### ÉPICA 1: Gestión de reservas de parqueo
+- Estado: En progreso avanzado
+- Implementado: creacion y consulta de reservas, validaciones de horario/disponibilidad, UI de reserva y resumen
+- Falta: cancelacion/edicion de reserva, expiracion automatica de reservas vencidas, confirmacion real por correo (actualmente pendiente)
+
+### ÉPICA 2: Consulta y visualización de disponibilidad de plazas
+- Estado: Implementada
+- Implementado: consulta de plazas por estado/zona, mapa visual en UI, leyenda y filtros por estado
+- Falta: visualizacion historica (tendencias de ocupacion) y mejoras UX de tiempo real
+
+### ÉPICA 3: Reportes y monitoreo del sistema
+- Estado: Pendiente
+- Implementado: conteos operativos basicos en panel de celador
+- Falta: reportes agregados por rango de fechas, metricas de uso, auditoria de eventos y alertas
+
+### ÉPICA 4: Administración de usuarios y seguridad
+- Estado: En progreso
+- Implementado: roles, permisos, matriz role-permission, control de acceso por guardas
+- Falta: modulo administrativo de usuarios (CRUD), gestion de estados de cuenta desde UI, trazabilidad/auditoria administrativa
 
 ## Autores
 

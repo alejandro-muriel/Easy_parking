@@ -25,6 +25,21 @@ interface Plaza {
   estado: string;
   tipo: string;
 }
+
+interface ColaUsuario {
+  id: string;
+  name: string;
+  email: string;
+}
+
+interface ColaEntry {
+  id: string;
+  idUsuario: string;
+  idPlaza: string;
+  estado: string;
+  fechaRegistro: string;
+  usuario: ColaUsuario;
+}
  
 interface ReservaFormProps {
   user: any;
@@ -52,6 +67,9 @@ export default function ReservaForm({
   const [error, setError] = useState('');
   const [horarios, setHorarios] = useState<Horario[]>([]);
   const [plazas, setPlazas] = useState<Plaza[]>([]);
+  const [queueMessage, setQueueMessage] = useState('');
+  const [queueLoadingId, setQueueLoadingId] = useState<string | null>(null);
+  const [queueMap, setQueueMap] = useState<Record<string, ColaEntry[]>>({});
  
   // Estado interno (fallback cuando el componente se usa sin props controlados)
   const [internalSelectedHorario, setInternalSelectedHorario] = useState('');
@@ -72,7 +90,7 @@ export default function ReservaForm({
       setLoading(true);
       const [horarioRes, plazasRes] = await Promise.all([
         fetch('/api/horarios'),
-        fetch('/api/plazas?estado=DISPONIBLE'),
+        fetch('/api/plazas'),
       ]);
  
       if (!horarioRes.ok || !plazasRes.ok) {
@@ -84,6 +102,14 @@ export default function ReservaForm({
  
       setHorarios(horariosData);
       setPlazas(plazasData);
+
+      const plazasNoDisponibles = (plazasData as Plaza[])
+        .filter((plaza) => plaza.estado !== 'DISPONIBLE')
+        .map((plaza) => plaza.id);
+
+      if (plazasNoDisponibles.length > 0) {
+        await Promise.all(plazasNoDisponibles.map((plazaId) => refreshQueue(plazaId)));
+      }
     } catch (err) {
       setError('No pudimos cargar los datos. Recarga la página.');
       console.error(err);
@@ -140,6 +166,57 @@ export default function ReservaForm({
     acc[plaza.zona].push(plaza);
     return acc;
   }, {});
+
+  const userRole = String(user?.role?.name ?? '').toUpperCase();
+  const canUseQueue = userRole === 'ESTUDIANTE' || userRole === 'DOCENTE';
+
+  const refreshQueue = async (plazaId: string) => {
+    const response = await fetch(`/api/plazas/${plazaId}/cola`);
+
+    if (!response.ok) {
+      throw new Error('No se pudo cargar la cola de la plaza.');
+    }
+
+    const data = await response.json();
+    const cola: ColaEntry[] = Array.isArray(data.cola) ? data.cola : [];
+
+    setQueueMap((prev) => ({
+      ...prev,
+      [plazaId]: cola,
+    }));
+
+    return cola;
+  };
+
+  const handleQueueAction = async (plazaId: string) => {
+    if (!canUseQueue) {
+      setQueueMessage('Solo estudiantes y docentes pueden usar la cola de espera.');
+      return;
+    }
+
+    setQueueMessage('');
+    setQueueLoadingId(plazaId);
+
+    try {
+      const currentQueue = queueMap[plazaId] ?? [];
+      const userInQueue = currentQueue.find((entry) => entry.idUsuario === user.id);
+
+      const method = userInQueue ? 'DELETE' : 'POST';
+      const actionRes = await fetch(`/api/plazas/${plazaId}/cola`, { method });
+      const actionData = await actionRes.json();
+
+      if (!actionRes.ok) {
+        throw new Error(actionData?.message || 'No fue posible actualizar la cola.');
+      }
+
+      setQueueMessage(actionData?.message || 'Cola actualizada correctamente.');
+      await refreshQueue(plazaId);
+    } catch (err: any) {
+      setQueueMessage(err?.message ?? 'Error al actualizar cola.');
+    } finally {
+      setQueueLoadingId(null);
+    }
+  };
  
   // Enviar reserva
   const handleSubmit = async (e: React.FormEvent) => {
@@ -287,7 +364,13 @@ export default function ReservaForm({
         </div>
  
         {plazas.length === 0 && (
-          <p style={{ fontSize: '0.875rem', color: 'var(--ep-text-muted)' }}>No hay plazas disponibles. Intenta más tarde.</p>
+          <p style={{ fontSize: '0.875rem', color: 'var(--ep-text-muted)' }}>No hay plazas para mostrar. Intenta más tarde.</p>
+        )}
+
+        {queueMessage && (
+          <div style={{ marginBottom: '1rem', borderRadius: '0.75rem', padding: '0.75rem 1rem', backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', color: '#1d4ed8', fontSize: '0.85rem' }}>
+            {queueMessage}
+          </div>
         )}
  
         {plazas.length > 0 && (
@@ -297,7 +380,7 @@ export default function ReservaForm({
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '1rem', marginBottom: '0.75rem' }}>
                   <div>
                     <h3 style={{ margin: 0, fontSize: '1rem', fontWeight: 700, color: 'var(--ep-text)' }}>Zona {zona}</h3>
-                    <p style={{ margin: '0.35rem 0 0', fontSize: '0.85rem', color: 'var(--ep-text-soft)' }}>{plazasZona.length} plazas disponibles</p>
+                    <p style={{ margin: '0.35rem 0 0', fontSize: '0.85rem', color: 'var(--ep-text-soft)' }}>{plazasZona.length} plazas</p>
                   </div>
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, padding: '0.3rem 0.75rem', borderRadius: '999px', backgroundColor: 'var(--ep-surface-soft)', color: 'var(--ep-text)' }}>
                     Zona {zona}
@@ -309,29 +392,77 @@ export default function ReservaForm({
                     const isAvailable = plaza.estado === 'DISPONIBLE';
  
                     return (
-                      <button
+                      <div
                         key={plaza.id}
-                        type="button"
-                        onClick={(e) => handlePlazaChange(e as any, plaza.id)}
-                        disabled={!isAvailable}
                         style={{
-                          aspectRatio: '1',
                           borderRadius: 'var(--ep-radius-card)',
                           border: `2px solid ${isSelected ? 'var(--ep-brand)' : isAvailable ? '#bbf7d0' : 'var(--ep-line)'}`,
                           backgroundColor: isSelected ? 'var(--ep-brand)' : isAvailable ? '#f0fdf4' : 'var(--ep-surface-soft)',
                           color: isSelected ? 'white' : isAvailable ? 'var(--ep-text)' : 'var(--ep-text-muted)',
-                          padding: '1rem',
-                          textAlign: 'center',
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          cursor: isAvailable ? 'pointer' : 'not-allowed',
-                          transition: 'all 0.2s',
-                          boxShadow: isSelected ? 'var(--ep-shadow-card)' : 'none'
+                          padding: '0.6rem',
+                          display: 'grid',
+                          gap: '0.4rem',
+                          boxShadow: isSelected ? 'var(--ep-shadow-card)' : 'none',
                         }}
                       >
-                        <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700 }}>{plaza.zona}</span>
-                        <span style={{ display: 'block', fontSize: '0.75rem', opacity: 0.8 }}>{plaza.fila}{plaza.numero}</span>
-                      </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handlePlazaChange(e as any, plaza.id)}
+                          disabled={!isAvailable}
+                          style={{
+                            width: '100%',
+                            background: 'transparent',
+                            border: 'none',
+                            textAlign: 'center',
+                            cursor: isAvailable ? 'pointer' : 'not-allowed',
+                            color: 'inherit',
+                            padding: '0.6rem 0.2rem',
+                          }}
+                        >
+                          <span style={{ display: 'block', fontSize: '0.875rem', fontWeight: 700 }}>{plaza.zona}</span>
+                          <span style={{ display: 'block', fontSize: '0.75rem', opacity: 0.8 }}>{plaza.fila}{plaza.numero}</span>
+                          <span style={{ display: 'block', fontSize: '0.68rem', marginTop: '0.2rem', opacity: 0.85 }}>
+                            {plaza.estado}
+                          </span>
+                        </button>
+
+                        {!isAvailable && (
+                          <>
+                            <button
+                              type="button"
+                              onClick={() => handleQueueAction(plaza.id)}
+                              disabled={queueLoadingId === plaza.id || !canUseQueue}
+                              style={{
+                                border: '1px solid var(--ep-line)',
+                                backgroundColor: 'white',
+                                color: '#1f2937',
+                                borderRadius: '999px',
+                                padding: '0.25rem 0.45rem',
+                                fontSize: '0.68rem',
+                                fontWeight: 700,
+                                cursor: queueLoadingId === plaza.id || !canUseQueue ? 'not-allowed' : 'pointer',
+                                opacity: queueLoadingId === plaza.id || !canUseQueue ? 0.7 : 1,
+                              }}
+                            >
+                              {queueLoadingId === plaza.id
+                                ? 'Procesando...'
+                                : (queueMap[plaza.id] ?? []).some((entry) => entry.idUsuario === user.id)
+                                  ? 'Salir de cola'
+                                  : 'Entrar en cola'}
+                            </button>
+
+                            <p style={{ margin: 0, textAlign: 'center', fontSize: '0.65rem', opacity: 0.85 }}>
+                              {(() => {
+                                const queue = queueMap[plaza.id] ?? [];
+                                const pos = queue.findIndex((entry) => entry.idUsuario === user.id);
+                                if (pos >= 0) return `Tu posición: ${pos + 1} de ${queue.length}`;
+                                if (queue.length > 0) return `Cola activa: ${queue.length}`;
+                                return 'Sin cola activa';
+                              })()}
+                            </p>
+                          </>
+                        )}
+                      </div>
                     );
                   })}
                 </div>

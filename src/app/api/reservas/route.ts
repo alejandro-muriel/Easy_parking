@@ -158,7 +158,14 @@ export async function GET() {
         idUsuario: user.id,
         estado: { in: ['ACTIVA', 'EXTENDIDA'] },
       },
-      include: { plaza: true },
+      include: {
+        plaza: true,
+        extensiones: {
+          select: {
+            minutosExtendidos: true,
+          },
+        },
+      },
       orderBy: { fechaHoraInicio: 'asc' },
     });
 
@@ -214,6 +221,8 @@ export async function GET() {
           fechaHoraFin: r.fechaHoraFin,
           estado: r.estado,
           plaza: r.plaza,
+          extensionCount: r.extensiones.length,
+          totalExtendedMinutes: r.extensiones.reduce((acc, item) => acc + item.minutosExtendidos, 0),
           horarioCompatible,
           horario: horarioInfo,
         };

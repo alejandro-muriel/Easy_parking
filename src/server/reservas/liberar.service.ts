@@ -6,6 +6,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { liberarPlaza, desbloquearPlazasExpiradas } from '@/server/plazas/service';
+import { sendMockReservationNotification } from '@/server/notificaciones/mock-service';
 
 const ESPERA_USUARIO_LLEGO_MS  = 5  * 60 * 1000; // 5 min  — plaza OCUPADA
 const ESPERA_USUARIO_NO_LLEGO_MS = 10 * 60 * 1000; // 10 min — plaza RESERVADA
@@ -30,7 +31,7 @@ export async function liberarPlazasVencidas(): Promise<ResultadoLiberacion> {
       estado:       { in: ['ACTIVA', 'EXTENDIDA'] },
       fechaHoraFin: { lt: ahora },
     },
-    include: { plaza: true },
+    include: { plaza: true, usuario: true },
   });
 
   for (const reserva of reservasVencidas) {
@@ -66,6 +67,16 @@ export async function liberarPlazasVencidas(): Promise<ResultadoLiberacion> {
       }
 
       liberadas++;
+
+      const notificationResult = await sendMockReservationNotification({
+        reservaId: reserva.id,
+        eventType: 'RESERVA_EXPIRADA',
+        trigger: 'SYSTEM',
+      });
+
+      if (!notificationResult.ok) {
+        errores.push(`Reserva ${reserva.id}: ${notificationResult.message}`);
+      }
 
       // 6. Revisar si hay alguien en la cola FIFO esperando esta plaza
       //    Usamos el modelo ColaEspera que creó el compa de HU-08

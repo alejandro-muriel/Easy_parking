@@ -21,8 +21,13 @@ vi.mock('@/server/plazas/service', () => ({
   desbloquearPlazasExpiradas: vi.fn(),
 }));
 
+vi.mock('@/server/notificaciones/mock-service', () => ({
+  sendMockReservationNotification: vi.fn().mockResolvedValue({ ok: true, message: 'ok' }),
+}));
+
 import { prisma }                                      from '@/lib/prisma';
 import { liberarPlaza, desbloquearPlazasExpiradas }    from '@/server/plazas/service';
+import { sendMockReservationNotification } from '@/server/notificaciones/mock-service';
 
 beforeEach(() => { vi.clearAllMocks(); });
 
@@ -67,6 +72,11 @@ describe('liberarPlazasVencidas', () => {
 
     expect(resultado.liberadas).toBe(1);
     expect(liberarPlaza).toHaveBeenCalledWith('p2');
+    expect(sendMockReservationNotification).toHaveBeenCalledWith({
+      reservaId: 'r2',
+      eventType: 'RESERVA_EXPIRADA',
+      trigger: 'SYSTEM',
+    });
   });
 
   it('libera tras 10 min si la plaza estaba RESERVADA (usuario no llegó)', async () => {

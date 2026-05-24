@@ -1,0 +1,14 @@
+﻿
+[1m[46m RUN [49m[22m [36mv4.1.1 [39m[90mC:/proyectos/U/PSW/Easy_parking[39m
+
+ [31mÔØ»[39m src/components/reserva/reserva-form.test.tsx [2m([22m[2m4 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[33m 1688[2mms[22m[39m
+     [32mÔ£ô[39m carga horarios y plazas al montar[32m 266[2mms[22m[39m
+     [32mÔ£ô[39m muestra error si no hay usuario[32m 184[2mms[22m[39m
+     [32mÔ£ô[39m llama a fetch para enviar reserva[32m 49[2mms[22m[39m
+[31m     [31m├ù[31m permite entrar a cola para una plaza no disponible[39m[33m 1182[2mms[22m[39m
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m3 passed[39m[22m[90m (4)[39m
+[2m   Start at [22m 11:01:04
+[2m   Duration [22m 4.73s[2m (transform 197ms, setup 191ms, import 511ms, tests 1.69s, environment 1.87s)[22m
+

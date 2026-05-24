@@ -1,5 +1,12 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { obtenerTodasLasPlazas, obtenerPlazaPorId, asignarPlaza, liberarPlaza } from './service';
+import {
+  obtenerTodasLasPlazas,
+  obtenerPlazaPorId,
+  asignarPlaza,
+  liberarPlaza,
+  obtenerPlazasMapa,
+  calcularStatsPlazas,
+} from './service';
 import { EstadoPlaza } from '@prisma/client';
 
 vi.mock('@/lib/prisma', () => ({
@@ -33,6 +40,104 @@ describe('Plazas Service', () => {
         orderBy: [{ zona: 'asc' }, { fila: 'asc' }, { numero: 'asc' }],
       });
       expect(result).toEqual(mockPlazas);
+    });
+  });
+
+  describe('obtenerPlazasMapa', () => {
+    it('deberia obtener plazas de mapa con select y orden base', async () => {
+      const mockPlazas = [
+        {
+          id: '1',
+          zona: 'A',
+          fila: '1',
+          numero: 1,
+          estado: EstadoPlaza.DISPONIBLE,
+          tipo: 'NORMAL',
+          bloqueoTemporalHasta: null,
+        },
+      ];
+
+      mockPrisma.plazaParqueo.findMany.mockResolvedValue(mockPlazas as any);
+
+      const result = await obtenerPlazasMapa();
+
+      expect(mockPrisma.plazaParqueo.findMany).toHaveBeenCalledWith({
+        where: undefined,
+        select: {
+          id: true,
+          zona: true,
+          fila: true,
+          numero: true,
+          estado: true,
+          tipo: true,
+          bloqueoTemporalHasta: true,
+        },
+        orderBy: [{ zona: 'asc' }, { fila: 'asc' }, { numero: 'asc' }],
+      });
+      expect(result).toEqual(mockPlazas);
+    });
+
+    it('deberia aplicar filtros de estado y zona', async () => {
+      mockPrisma.plazaParqueo.findMany.mockResolvedValue([] as any);
+
+      await obtenerPlazasMapa({ estado: EstadoPlaza.OCUPADA, zona: 'B' });
+
+      expect(mockPrisma.plazaParqueo.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { estado: EstadoPlaza.OCUPADA, zona: 'B' },
+        }),
+      );
+    });
+  });
+
+  describe('calcularStatsPlazas', () => {
+    it('deberia calcular contadores por estado', () => {
+      const stats = calcularStatsPlazas([
+        {
+          id: '1',
+          zona: 'A',
+          fila: '1',
+          numero: 1,
+          estado: EstadoPlaza.DISPONIBLE,
+          tipo: 'NORMAL',
+          bloqueoTemporalHasta: null,
+        },
+        {
+          id: '2',
+          zona: 'A',
+          fila: '1',
+          numero: 2,
+          estado: EstadoPlaza.OCUPADA,
+          tipo: 'NORMAL',
+          bloqueoTemporalHasta: null,
+        },
+        {
+          id: '3',
+          zona: 'A',
+          fila: '1',
+          numero: 3,
+          estado: EstadoPlaza.RESERVADA,
+          tipo: 'PREFERENCIAL',
+          bloqueoTemporalHasta: null,
+        },
+        {
+          id: '4',
+          zona: 'B',
+          fila: '2',
+          numero: 1,
+          estado: EstadoPlaza.BLOQUEADA,
+          tipo: 'PERMANENTE',
+          bloqueoTemporalHasta: new Date(),
+        },
+      ]);
+
+      expect(stats).toEqual({
+        total: 4,
+        disponibles: 1,
+        ocupadas: 1,
+        reservadas: 1,
+        bloqueadas: 1,
+      });
     });
   });
 

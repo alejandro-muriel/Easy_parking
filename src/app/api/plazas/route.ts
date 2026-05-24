@@ -1,28 +1,41 @@
 // GET /api/plazas - Obtener plazas con filtros
 import { NextRequest, NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
-import { requireAuth } from '@/server/auth/guards';
+import { EstadoPlaza } from '@prisma/client';
+import { requirePermission } from '@/server/auth/guards';
+import { calcularStatsPlazas, obtenerPlazasMapa } from '@/server/plazas/service';
 
 export async function GET(request: NextRequest) {
   try {
-    await requireAuth(); // Validar que el usuario esté autenticado
+    await requirePermission('parking.view.map', '/dashboard');
 
     const { searchParams } = new URL(request.url);
-    const estado = searchParams.get('estado');
+    const estadoParam = searchParams.get('estado');
     const zona = searchParams.get('zona');
+    const includeStats = searchParams.get('includeStats') === 'true';
 
-    const where: any = {};
-    if (estado) where.estado = estado;
-    if (zona) where.zona = zona;
+    let estado: EstadoPlaza | undefined;
+    if (estadoParam) {
+      const estadoNormalizado = estadoParam.toUpperCase();
+      if (!Object.values(EstadoPlaza).includes(estadoNormalizado as EstadoPlaza)) {
+        return NextResponse.json(
+          { message: `Estado inválido: ${estadoParam}` },
+          { status: 400 },
+        );
+      }
+      estado = estadoNormalizado as EstadoPlaza;
+    }
 
-    const plazas = await prisma.plazaParqueo.findMany({
-      where: Object.keys(where).length > 0 ? where : undefined,
-      orderBy: [
-        { zona: 'asc' },
-        { fila: 'asc' },
-        { numero: 'asc' },
-      ],
+    const plazas = await obtenerPlazasMapa({
+      estado,
+      zona: zona ?? undefined,
     });
+
+    if (includeStats) {
+      return NextResponse.json({
+        plazas,
+        stats: calcularStatsPlazas(plazas),
+      });
+    }
 
     return NextResponse.json(plazas);
   } catch (error) {

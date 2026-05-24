@@ -9,6 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "seed": "npx prisma db seed",
+    "db:demo": "npx prisma db push && npm run seed",
+    "db:demo:reset": "npx prisma db push --accept-data-loss && npm run seed",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage"

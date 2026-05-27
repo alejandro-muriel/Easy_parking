@@ -1,12 +1,7 @@
-// src/app/reserva/page.tsx
-// Server Component — autentica al usuario y renderiza la vista de reserva
- 
+import { redirect } from 'next/navigation';
 import { requireAuth } from '@/server/auth/guards';
-import ReservaPageClient from '@/components/reserva/reserva-page-client';
- 
-export default async function ReservaPage() {
-  // Si no hay sesión, requireAuth redirige a /login automáticamente
-  const user = await requireAuth();
- 
-  return <ReservaPageClient user={user} />;
+
+export default async function HomePage() {
+  await requireAuth('/login');
+  redirect('/dashboard');
 }

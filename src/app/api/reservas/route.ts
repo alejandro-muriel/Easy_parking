@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAuth } from '@/server/auth/guards';
 import { Reserva } from '@/lib/reserva';
+import { RESERVA_NOTIFICATION_DELAY_MINUTES } from '@/server/reservas/config';
 
 export async function POST(request: NextRequest) {
   try {
@@ -255,8 +256,15 @@ export async function PATCH(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { message: resultado.mensaje },
-      { status: 200 } // 200 OK
+      {
+        message: resultado.mensaje,
+        notification: {
+          reservaId,
+          eventType: 'RESERVA_CANCELADA',
+          delayMinutes: RESERVA_NOTIFICATION_DELAY_MINUTES,
+        },
+      },
+      { status: 200 }
     );
 
   } catch (error) {

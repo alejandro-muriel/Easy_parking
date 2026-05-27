@@ -1,6 +1,8 @@
 'use client';
  
 import { useEffect, useState } from 'react';
+import NotificationPushModal from '@/components/reserva/notification-push-modal';
+import { useDeferredNotification } from '@/hooks/use-deferred-notification';
  
 interface HorarioInfo {
   id: string;
@@ -35,6 +37,11 @@ interface CanExtendResponse {
   ok: boolean;
   status: number;
   message: string;
+  notification?: {
+    reservaId: string;
+    eventType: 'RESERVA_EXTENDIDA';
+    delayMinutes: number;
+  };
   reserva?: {
     extensionMinutes: number;
     extensionCount: number;
@@ -60,6 +67,15 @@ export default function ReservaActivaList() {
   const [accionError, setAccionError] = useState('');
   const [processingId, setProcessingId] = useState<string | null>(null);
   const [pendingExtension, setPendingExtension] = useState<{ reservaId: string; minutes: number } | null>(null);
+  const {
+    pending,
+    feedback,
+    sending,
+    clearFeedback,
+    startNotification,
+    cancelNotification,
+    sendNow,
+  } = useDeferredNotification();
  
   useEffect(() => { fetchReservas(); }, []);
  
@@ -80,6 +96,7 @@ export default function ReservaActivaList() {
 
   const handleExtenderReserva = async (reservaId: string) => {
     setAccionError('');
+    clearFeedback();
     setProcessingId(reservaId);
 
     try {
@@ -107,6 +124,7 @@ export default function ReservaActivaList() {
     }
 
     setAccionError('');
+    clearFeedback();
     setProcessingId(pendingExtension.reservaId);
 
     try {
@@ -118,6 +136,17 @@ export default function ReservaActivaList() {
 
       if (!extendRes.ok || !extendData.ok) {
         throw new Error(extendData.message || 'No fue posible extender la reserva.');
+      }
+
+      if (extendData.notification?.reservaId) {
+        startNotification({
+          reservaId: extendData.notification.reservaId,
+          eventType: extendData.notification.eventType,
+          delayMinutes: extendData.notification.delayMinutes,
+          title: 'Reserva extendida',
+          description:
+            'Puedes cerrar esta notificación para cancelar el envío de SMS y email. Si no interactúas, se enviarán automáticamente al finalizar el contador.',
+        });
       }
 
       setPendingExtension(null);
@@ -174,6 +203,12 @@ export default function ReservaActivaList() {
           {accionError && (
             <div style={{ padding: '1rem', borderRadius: '0.75rem', backgroundColor: '#fee2e2', color: '#991b1b' }}>
               {accionError}
+            </div>
+          )}
+
+          {feedback && (
+            <div style={{ padding: '1rem', borderRadius: '0.75rem', backgroundColor: '#eff6ff', color: '#1d4ed8' }}>
+              {feedback}
             </div>
           )}
 
@@ -313,6 +348,18 @@ export default function ReservaActivaList() {
           </div>
         </div>
       )}
+
+      <NotificationPushModal
+        open={Boolean(pending)}
+        title={pending?.title ?? ''}
+        description={pending?.description ?? ''}
+        secondsLeft={pending?.secondsLeft ?? 0}
+        sending={sending}
+        onClose={cancelNotification}
+        onSendNow={() => {
+          void sendNow();
+        }}
+      />
     </article>
   );
 }

@@ -16,7 +16,18 @@ type ExtendFailReason =
   | 'MAX_REACHED'
   | 'SCHEDULE_MISMATCH'
   | 'USER_CONFLICT'
-  | 'PLAZA_CONFLICT';
+  | 'PLAZA_CONFLICT'
+  | 'PLAZA_BLOCKED';
+
+class ExtensionConflictError extends Error {
+  constructor(
+    public readonly reason: ExtendFailReason,
+    public readonly status: number,
+    message: string,
+  ) {
+    super(message);
+  }
+}
 
 export type CanExtendResult = {
   ok: boolean;
@@ -68,8 +79,8 @@ export async function canExtendReserva(reservaId: string, userId: string): Promi
     return { ok: false, status: 403, reason: 'FORBIDDEN', message: 'Solo estudiantes y docentes pueden extender reservas.' };
   }
 
-  if (reserva.estado !== 'ACTIVA') {
-    return { ok: false, status: 409, reason: 'INVALID_STATE', message: 'Solo las reservas activas pueden extenderse.' };
+  if (reserva.estado !== 'ACTIVA' && reserva.estado !== 'EXTENDIDA') {
+    return { ok: false, status: 409, reason: 'INVALID_STATE', message: 'Solo las reservas activas o extendidas pueden extenderse.' };
   }
 
   const now = new Date();
@@ -90,6 +101,15 @@ export async function canExtendReserva(reservaId: string, userId: string): Promi
       status: 409,
       reason: 'MAX_REACHED',
       message: `Ya alcanzaste el máximo de ${RESERVA_EXTENSION_MAX_COUNT} extensiones para esta reserva.`,
+    };
+  }
+
+  if (reserva.plaza.estado !== 'RESERVADA') {
+    return {
+      ok: false,
+      status: 409,
+      reason: 'PLAZA_BLOCKED',
+      message: 'La plaza ya no está disponible para extensión.',
     };
   }
 
@@ -218,42 +238,73 @@ export async function extendReserva(reservaId: string, userId: string): Promise<
   const extensionMinutes = validation.reserva.extensionMinutes;
   const nuevaFechaHoraFin = validation.reserva.nuevaFechaHoraFin;
 
-  await prisma.$transaction(async (tx) => {
-    const reservaActual = await tx.reserva.findUnique({
-      where: { id: reservaId },
-      include: {
-        extensiones: true,
-      },
-    });
+  try {
+    await prisma.$transaction(async (tx) => {
+      const reservaActual = await tx.reserva.findUnique({
+        where: { id: reservaId },
+        include: {
+          extensiones: true,
+          plaza: true,
+        },
+      });
 
-    if (!reservaActual) {
-      throw new Error('Reserva no encontrada');
+      if (!reservaActual) {
+        throw new Error('Reserva no encontrada');
+      }
+
+      if (reservaActual.estado !== 'ACTIVA' && reservaActual.estado !== 'EXTENDIDA') {
+        throw new ExtensionConflictError('INVALID_STATE', 409, 'La reserva ya no está activa.');
+      }
+
+      if (reservaActual.plaza.estado !== 'RESERVADA') {
+        throw new ExtensionConflictError('PLAZA_BLOCKED', 409, 'La plaza ya no está disponible.');
+      }
+
+      const conflictoPlaza = await tx.reserva.findFirst({
+        where: {
+          idPlaza: reservaActual.idPlaza,
+          id: { not: reservaId },
+          estado: { in: ['ACTIVA', 'EXTENDIDA'] },
+          fechaHoraInicio: { lt: nuevaFechaHoraFin },
+          fechaHoraFin: { gt: reservaActual.fechaHoraFin },
+        },
+      });
+
+      if (conflictoPlaza) {
+        throw new ExtensionConflictError('PLAZA_CONFLICT', 409, 'Conflicto de disponibilidad detectado durante la extensión.');
+      }
+
+      await tx.reservaExtension.create({
+        data: {
+          reservaId,
+          minutosExtendidos: extensionMinutes,
+          fechaHoraFinAnterior: reservaActual.fechaHoraFin,
+          fechaHoraFinNueva: nuevaFechaHoraFin,
+        },
+      });
+
+      await tx.reserva.update({
+        where: { id: reservaId },
+        data: {
+          fechaHoraFin: nuevaFechaHoraFin,
+          estado: 'EXTENDIDA',
+        },
+      });
+
+      await tx.plazaParqueo.update({
+        where: { id: reservaActual.idPlaza },
+        data: {
+          estado: 'RESERVADA',
+          ultimoCambio: new Date(),
+        },
+      });
+    });
+  } catch (error) {
+    if (error instanceof ExtensionConflictError) {
+      return { ok: false, status: error.status, reason: error.reason, message: error.message };
     }
-
-    await tx.reservaExtension.create({
-      data: {
-        reservaId,
-        minutosExtendidos: extensionMinutes,
-        fechaHoraFinAnterior: reservaActual.fechaHoraFin,
-        fechaHoraFinNueva: nuevaFechaHoraFin,
-      },
-    });
-
-    await tx.reserva.update({
-      where: { id: reservaId },
-      data: {
-        fechaHoraFin: nuevaFechaHoraFin,
-      },
-    });
-
-    await tx.plazaParqueo.update({
-      where: { id: reservaActual.idPlaza },
-      data: {
-        estado: 'RESERVADA',
-        ultimoCambio: new Date(),
-      },
-    });
-  });
+    throw error;
+  }
 
   return {
     ok: true,

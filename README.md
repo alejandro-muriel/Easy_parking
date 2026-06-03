@@ -116,12 +116,14 @@ APP_ENV="development"
 RESERVA_EXTENSION_MINUTES="20"
 RESERVA_EXTENSION_WINDOW_MINUTES="20"
 RESERVA_EXTENSION_MAX_COUNT="1"
+RESERVA_NOTIFICATION_DELAY_MINUTES="10"
 ```
 
 Notas de configuracion:
 - `RESERVA_EXTENSION_MINUTES`: minutos por extension (default `20`, rango `5-120`).
 - `RESERVA_EXTENSION_WINDOW_MINUTES`: tolerancia en minutos para solicitar extension despues del fin (default `20`, rango `0-60`).
 - `RESERVA_EXTENSION_MAX_COUNT`: maximo de extensiones por reserva (default `1`, rango `1-5`).
+- `RESERVA_NOTIFICATION_DELAY_MINUTES`: tiempo de espera para enviar SMS/email mock si el usuario no interactua con la notificacion push (default `10`, rango `1-15`).
 
 ## Instalacion y ejecucion
 
@@ -187,6 +189,7 @@ npm run test:coverage
 - `/api/plazas/[id]/cola` protegida por cookie/sesion
 - `/api/reservas/[id]/can-extend` protegida por cookie/sesion
 - `/api/reservas/[id]/extend` protegida por cookie/sesion
+- `/api/notificaciones/mock` protegida por cookie/sesion
 
 ## Modelos Prisma actuales
 

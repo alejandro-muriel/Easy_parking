@@ -45,6 +45,7 @@ function buildReserva() {
     },
     plaza: {
       id: 'plaza-1',
+      estado: 'RESERVADA',
     },
     extensiones: [],
   };
@@ -120,6 +121,7 @@ describe('extension-service', () => {
     const tx = {
       reserva: {
         findUnique: vi.fn().mockResolvedValue(reserva),
+        findFirst: vi.fn().mockResolvedValue(null),
         update: vi.fn().mockResolvedValue({ id: 'res-1' }),
       },
       reservaExtension: {
@@ -136,7 +138,95 @@ describe('extension-service', () => {
 
     expect(result.ok).toBe(true);
     expect(tx.reservaExtension.create).toHaveBeenCalled();
-    expect(tx.reserva.update).toHaveBeenCalled();
+    expect(tx.reserva.update).toHaveBeenCalledWith(
+      expect.objectContaining({ data: expect.objectContaining({ estado: 'EXTENDIDA' }) }),
+    );
     expect(tx.plazaParqueo.update).toHaveBeenCalled();
+  });
+
+  it('rechaza extensión cuando la plaza está BLOQUEADA', async () => {
+    const reserva = { ...buildReserva(), plaza: { id: 'plaza-1', estado: 'BLOQUEADA' } };
+    vi.mocked(prisma.reserva.findUnique).mockResolvedValue(reserva as any);
+
+    const result = await canExtendReserva('res-1', 'user-1');
+
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe(409);
+    expect(result.reason).toBe('PLAZA_BLOCKED');
+  });
+
+  it('rechaza extensión cuando la plaza está OCUPADA', async () => {
+    const reserva = { ...buildReserva(), plaza: { id: 'plaza-1', estado: 'OCUPADA' } };
+    vi.mocked(prisma.reserva.findUnique).mockResolvedValue(reserva as any);
+
+    const result = await canExtendReserva('res-1', 'user-1');
+
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe(409);
+    expect(result.reason).toBe('PLAZA_BLOCKED');
+  });
+
+  it('acepta extensión de reserva con estado EXTENDIDA', async () => {
+    const reserva = { ...buildReserva(), estado: 'EXTENDIDA', extensiones: [] };
+    const diaSemana = reserva.fechaHoraInicio.toLocaleDateString('es', { weekday: 'long' }).toLowerCase();
+
+    vi.mocked(prisma.reserva.findUnique).mockResolvedValue(reserva as any);
+    vi.mocked(prisma.colaEspera.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.reserva.findFirst)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+    vi.mocked(prisma.horario.findMany).mockResolvedValue([
+      {
+        id: 'h-1',
+        materia: 'Programacion',
+        horaInicio: new Date(reserva.fechaHoraInicio.getTime() - 60 * 60 * 1000),
+        horaFin: new Date(reserva.fechaHoraFin.getTime() + 120 * 60 * 1000),
+        diaSemana,
+      },
+    ] as any);
+
+    const result = await canExtendReserva('res-1', 'user-1');
+
+    expect(result.ok).toBe(true);
+    expect(result.status).toBe(200);
+  });
+
+  it('rechaza dentro de la transacción si la plaza cambia de estado (race condition)', async () => {
+    const reserva = buildReserva();
+    const diaSemana = reserva.fechaHoraInicio.toLocaleDateString('es', { weekday: 'long' }).toLowerCase();
+
+    vi.mocked(prisma.reserva.findUnique).mockResolvedValue(reserva as any);
+    vi.mocked(prisma.colaEspera.findFirst).mockResolvedValue(null);
+    vi.mocked(prisma.reserva.findFirst)
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+    vi.mocked(prisma.horario.findMany).mockResolvedValue([
+      {
+        id: 'h-1',
+        materia: 'Programacion',
+        horaInicio: new Date(reserva.fechaHoraInicio.getTime() - 60 * 60 * 1000),
+        horaFin: new Date(reserva.fechaHoraFin.getTime() + 120 * 60 * 1000),
+        diaSemana,
+      },
+    ] as any);
+
+    const tx = {
+      reserva: {
+        findUnique: vi.fn().mockResolvedValue({ ...reserva, plaza: { id: 'plaza-1', estado: 'BLOQUEADA' } }),
+        findFirst: vi.fn().mockResolvedValue(null),
+        update: vi.fn(),
+      },
+      reservaExtension: { create: vi.fn() },
+      plazaParqueo: { update: vi.fn() },
+    };
+
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => cb(tx));
+
+    const result = await extendReserva('res-1', 'user-1');
+
+    expect(result.ok).toBe(false);
+    expect(result.status).toBe(409);
+    expect(result.reason).toBe('PLAZA_BLOCKED');
+    expect(tx.reserva.update).not.toHaveBeenCalled();
   });
 });

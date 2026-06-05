@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   accionAsignarPlaza,
   accionLiberarPlaza,
@@ -10,6 +10,11 @@ import {
 
 type EstadoPlaza = 'DISPONIBLE' | 'RESERVADA' | 'OCUPADA' | 'BLOQUEADA';
 
+type Reserva = {
+  id: string;
+  fechaHoraFin: Date;
+};
+
 type Plaza = {
   id: string;
   zona: string;
@@ -18,6 +23,7 @@ type Plaza = {
   estado: EstadoPlaza;
   tipo: string;
   bloqueoTemporalHasta: Date | null;
+  reservas: Reserva[];
 };
 
 const ESTILOS: Record<EstadoPlaza, { border: string; bg: string; color: string; icono: string }> = {
@@ -27,10 +33,39 @@ const ESTILOS: Record<EstadoPlaza, { border: string; bg: string; color: string; 
   BLOQUEADA:  { border: '#94a3b8', bg: '#f8fafc', color: '#64748b', icono: '⊘' },
 };
 
+function formatearTiempoRestante(ms: number): string {
+  if (ms <= 0) return '0 min';
+  const horas = Math.floor(ms / (1000 * 60 * 60));
+  const minutos = Math.floor((ms % (1000 * 60 * 60)) / (1000 * 60));
+  if (horas > 0) return `${horas}h ${minutos}m`;
+  return `${minutos} min`;
+}
+
 export default function PlazaCard({ plaza }: { plaza: Plaza }) {
   const [mensaje, setMensaje] = useState<string | null>(null);
   const [cargando, setCargando] = useState(false);
+  const [tiempoRestante, setTiempoRestante] = useState<number | null>(null);
   const est = ESTILOS[plaza.estado];
+
+  const reservaActiva = plaza.reservas.length > 0 ? plaza.reservas[0] : null;
+
+  useEffect(() => {
+    if (!reservaActiva || (plaza.estado !== 'OCUPADA' && plaza.estado !== 'RESERVADA')) {
+      setTiempoRestante(null);
+      return;
+    }
+
+    const actualizar = () => {
+      const ahora = Date.now();
+      const fin = new Date(reservaActiva.fechaHoraFin).getTime();
+      const restante = Math.max(0, fin - ahora);
+      setTiempoRestante(restante);
+    };
+
+    actualizar();
+    const intervalo = setInterval(actualizar, 1000);
+    return () => clearInterval(intervalo);
+  }, [reservaActiva, plaza.estado]);
 
   async function ejecutar(accion: () => Promise<{ ok: boolean; mensaje: string }>) {
     setCargando(true);
@@ -83,6 +118,12 @@ export default function PlazaCard({ plaza }: { plaza: Plaza }) {
       {plaza.estado === 'BLOQUEADA' && plaza.bloqueoTemporalHasta && (
         <p style={{ fontSize: '0.7rem', color: 'var(--ep-text-muted)', margin: 0 }}>
           Libre aprox. {new Date(plaza.bloqueoTemporalHasta).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' })}
+        </p>
+      )}
+
+      {(plaza.estado === 'OCUPADA' || plaza.estado === 'RESERVADA') && tiempoRestante !== null && (
+        <p style={{ fontSize: '0.7rem', color: 'var(--ep-text-muted)', margin: 0 }}>
+          ⏱ Disponible en: {formatearTiempoRestante(tiempoRestante)}
         </p>
       )}
 

@@ -5,6 +5,11 @@ import PlazaCard from '@/components/celador/PlazaCard';
 
 type EstadoPlaza = 'DISPONIBLE' | 'RESERVADA' | 'OCUPADA' | 'BLOQUEADA';
 
+type Reserva = {
+  id: string;
+  fechaHoraFin: Date;
+};
+
 type Plaza = {
   id: string;
   zona: string;
@@ -13,6 +18,7 @@ type Plaza = {
   estado: EstadoPlaza;
   tipo: string;
   bloqueoTemporalHasta: Date | null;
+  reservas: Reserva[];
 };
 
 type Filtro = 'TODAS' | EstadoPlaza;

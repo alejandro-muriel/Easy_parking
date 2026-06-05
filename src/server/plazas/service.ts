@@ -5,6 +5,14 @@ const BLOQUEO_TEMPORAL_MS = 5 * 60 * 1000; // 5 minutos
 
 export async function obtenerTodasLasPlazas() {
   return prisma.plazaParqueo.findMany({
+    include: {
+      reservas: {
+        where: {
+          estado: { in: ['ACTIVA', 'EXTENDIDA'] },
+        },
+        orderBy: { fechaHoraFin: 'desc' },
+      },
+    },
     orderBy: [{ zona: 'asc' }, { fila: 'asc' }, { numero: 'asc' }],
   });
 }

@@ -44,7 +44,15 @@ describe('ReservaActivaList', () => {
       } as Response)
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ ok: true, message: 'extendida' }),
+        json: async () => ({
+          ok: true,
+          message: 'extendida',
+          notification: {
+            reservaId: 'res-1',
+            eventType: 'RESERVA_EXTENDIDA',
+            delayMinutes: 10,
+          },
+        }),
       } as Response)
       .mockResolvedValue({
         ok: true,
@@ -110,6 +118,94 @@ describe('ReservaActivaList', () => {
 
     await waitFor(() => {
       expect(screen.getByText(/usuario en cola con prioridad/i)).toBeInTheDocument();
+    });
+  });
+
+  it('envía notificación mock cuando el usuario selecciona enviar ahora', async () => {
+    vi.mocked(globalThis.fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          reservas: [
+            {
+              id: 'res-1',
+              fechaHoraInicio: new Date().toISOString(),
+              fechaHoraFin: new Date().toISOString(),
+              estado: 'ACTIVA',
+              extensionCount: 0,
+              totalExtendedMinutes: 0,
+              plaza: { id: 'p1', zona: 'A', fila: 'A', numero: 1, estado: 'RESERVADA', tipo: 'NORMAL' },
+              horarioCompatible: true,
+              horario: null,
+            },
+          ],
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          status: 200,
+          message: 'ok',
+          reserva: {
+            extensionMinutes: 20,
+            extensionCount: 0,
+            fechaHoraFin: new Date().toISOString(),
+            nuevaFechaHoraFin: new Date().toISOString(),
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          message: 'extendida',
+          notification: {
+            reservaId: 'res-1',
+            eventType: 'RESERVA_EXTENDIDA',
+            delayMinutes: 10,
+          },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ reservas: [] }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ ok: true, message: 'mock sent' }),
+      } as Response);
+
+    render(<ReservaActivaList />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Zona A/i)).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Extender' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: 'Confirmar extensión' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Confirmar' }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog', { name: 'Notificación pendiente' })).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: 'Enviar ahora' }));
+
+    await waitFor(() => {
+      expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledWith('/api/notificaciones/mock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          reservaId: 'res-1',
+          eventType: 'RESERVA_EXTENDIDA',
+          trigger: 'MANUAL',
+        }),
+      });
     });
   });
 });

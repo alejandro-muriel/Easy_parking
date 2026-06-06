@@ -3,7 +3,7 @@ import type { NextRequest } from 'next/server';
 import { SESSION_COOKIE_NAME } from '@/server/auth/config';
 
 // Rutas públicas: cualquier cosa que empiece con estos prefijos no requiere sesión
-const PUBLIC_PATHS = ['/', '/login', '/api/auth/login'];
+const PUBLIC_PATHS = ['/login', '/api/auth/login'];
 
 function isPublicPath(pathname: string) {
   return PUBLIC_PATHS.some((path) => pathname === path || pathname.startsWith(path + '/'));

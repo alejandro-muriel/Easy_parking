@@ -256,9 +256,9 @@ console.log(`    ✓ ${PLAZAS.length} parking spots created/updated`);
       // Horarios del estudiante
       {
         materia: 'Matemáticas I',
-        horaInicio: new Date('2026-04-07T08:00:00.000Z'), // Lunes 8:00 AM
-        horaFin: new Date('2026-04-07T10:00:00.000Z'),     // Lunes 10:00 AM
-        diaSemana: 'lunes',
+        horaInicio: new Date('2026-06-06T17:30:00.000Z'),
+        horaFin: new Date('2026-06-06T19:30:00.000Z'),
+        diaSemana: 'sabado',
         idUsuario: estudiante?.id || '',
       },
       {

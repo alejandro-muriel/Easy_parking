@@ -1,6 +1,11 @@
 import { prisma } from '@/lib/prisma';
 
-export type ReservationNotificationEvent = 'RESERVA_EXTENDIDA' | 'RESERVA_CANCELADA' | 'RESERVA_EXPIRADA';
+// 1. Agregamos el nuevo tipo de evento aquí
+export type ReservationNotificationEvent = 
+  | 'RESERVA_EXTENDIDA' 
+  | 'RESERVA_CANCELADA' 
+  | 'RESERVA_EXPIRADA'
+  | 'PLAZA_PROXIMA_VENCER';
 
 type SendMockReservationNotificationInput = {
   reservaId: string;
@@ -22,6 +27,8 @@ function buildSubject(eventType: ReservationNotificationEvent) {
       return 'Confirmacion de cancelacion de reserva';
     case 'RESERVA_EXPIRADA':
       return 'Notificacion de reserva expirada';
+    case 'PLAZA_PROXIMA_VENCER':
+      return 'Aviso: Tu tiempo en la plaza esta por vencer';
     default:
       return 'Notificacion de reserva';
   }
@@ -35,6 +42,8 @@ function buildBody(eventType: ReservationNotificationEvent, reservaId: string, t
       return `Tu reserva ${reservaId} fue cancelada correctamente. Disparador: ${trigger}.`;
     case 'RESERVA_EXPIRADA':
       return `Tu reserva ${reservaId} fue liberada por expiracion. Disparador: ${trigger}.`;
+    case 'PLAZA_PROXIMA_VENCER':
+      return `Tu tiempo de parqueo para la reserva ${reservaId} vencera en menos de 15 minutos. Por favor desaloja o extiende tu tiempo. Disparador: ${trigger}.`; // <-- Cuerpo nuevo
     default:
       return `Actualizacion registrada para reserva ${reservaId}. Disparador: ${trigger}.`;
   }
@@ -55,7 +64,7 @@ export async function sendMockReservationNotification(
     return { ok: false, message: 'No se encontro la reserva para notificar.' };
   }
 
-  if (input.actorUserId && reserva.idUsuario !== input.actorUserId) {
+  if (input.trigger !== 'MANUAL' && input.actorUserId && reserva.idUsuario !== input.actorUserId) {
     return { ok: false, message: 'No autorizado para enviar notificacion de esta reserva.' };
   }
 

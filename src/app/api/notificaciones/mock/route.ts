@@ -1,16 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth } from '@/server/auth/guards';
-import { sendMockReservationNotification } from '@/server/notificaciones/mock-service';
-
-type NotificationEvent = 'RESERVA_EXTENDIDA' | 'RESERVA_CANCELADA';
+import { sendMockReservationNotification, type ReservationNotificationEvent } from '@/server/notificaciones/mock-service';
 
 type NotificationRequestBody = {
   reservaId?: string;
-  eventType?: NotificationEvent;
-  trigger?: 'TIMEOUT' | 'MANUAL';
+  eventType?: ReservationNotificationEvent;
+  trigger?: 'TIMEOUT' | 'MANUAL' | 'SYSTEM';
 };
 
-const ALLOWED_EVENTS = new Set<NotificationEvent>(['RESERVA_EXTENDIDA', 'RESERVA_CANCELADA']);
+const ALLOWED_EVENTS = new Set<ReservationNotificationEvent>([
+  'RESERVA_EXTENDIDA',
+  'RESERVA_CANCELADA',
+  'PLAZA_PROXIMA_VENCER'
+]);
 
 export async function POST(request: NextRequest) {
   try {

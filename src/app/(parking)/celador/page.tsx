@@ -1,6 +1,7 @@
 import { requirePermission } from '@/server/auth/guards';
 import { obtenerTodasLasPlazas, desbloquearPlazasExpiradas } from '@/server/plazas/service';
 import PlazaGrid from '@/components/celador/PlazaGrid';
+import PlazasAlertaList from '@/components/celador/PlazasAlertaList';
 
 export default async function CeladorPage() {
   const user = await requirePermission('parking.slot.manage.assign', '/dashboard');
@@ -38,7 +39,6 @@ export default async function CeladorPage() {
           </form>
         </header>
 
-        {/* Contadores */}
         <section style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '1rem' }}>
           {[
             { label: 'Disponibles', valor: disponibles, color: '#16a34a' },
@@ -54,7 +54,8 @@ export default async function CeladorPage() {
           ))}
         </section>
 
-        {/* Mapa */}
+        <PlazasAlertaList />
+
         <div className="login-card" style={{ padding: '1.5rem' }}>
           <PlazaGrid plazas={plazas} />
         </div>
